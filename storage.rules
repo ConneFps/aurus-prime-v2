@@ -1,0 +1,116 @@
+rules_version = '2';
+
+// =============================================================================
+// Aurus Prime 2.0 — Opção B — REGRAS DO STORAGE (versão completa)
+//
+// ENQUANTO O SISTEMA ATUAL ESTIVER NO AR, NÃO publique este arquivo inteiro:
+// use o storage-acrescentar.rules (só acrescenta, não mexe no que existe).
+// Este arquivo completo é para depois que o sistema atual for desligado.
+//
+// Pastas do sistema novo: catalog, products, settings, equines (fotos, leitura
+// pública); customers, sales (só a equipe); portal/{uid} (cliente do portal).
+// Limite 15 MB; imagem ou PDF (a equipe também envia XML de NF-e).
+// =============================================================================
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function v2SignedIn() { return request.auth != null; }
+    function v2Email() { return request.auth.token.get('email', '').lower(); }
+    function v2Verified() { return request.auth.token.get('email_verified', false) == true; }
+    function v2Corporate() {
+      return v2SignedIn() && v2Verified()
+        && v2Email().matches('.*@(mvgbalimentacao|grtbalimentacao|girassolalimentacao|aurusprime)[.]com');
+    }
+    function v2Profile() {
+      return firestore.get(/databases/aurus-prime-v2/documents/profiles/$(request.auth.uid)).data;
+    }
+    function v2StaffProfile() {
+      return v2SignedIn()
+        && v2Profile().role in ['ADMIN', 'MANAGER', 'FINANCIAL', 'SELLER', 'LOGISTICS', 'OPERATOR']
+        && v2Profile().active == true;
+    }
+    function v2Staff() { return v2Corporate() || v2StaffProfile(); }
+    function v2SizeOk() { return request.resource.size <= 15 * 1024 * 1024; }
+    function v2ImageOrPdf() {
+      return request.resource.contentType != null
+        && request.resource.contentType.matches('image/.*|application/pdf');
+    }
+    function v2StaffFile() {
+      return v2ImageOrPdf() || request.resource.contentType.matches('application/xml|text/xml');
+    }
+
+    // Fotos (leitura pública; a equipe envia e apaga)
+    match /catalog/{v2Path=**} {
+      allow read: if true;
+      allow delete: if v2Staff();
+      allow create, update: if v2Staff() && v2SizeOk() && v2ImageOrPdf();
+    }
+    match /products/{v2Path=**} {
+      allow read: if true;
+      allow delete: if v2Staff();
+      allow create, update: if v2Staff() && v2SizeOk() && v2ImageOrPdf();
+    }
+    match /settings/{v2Path=**} {
+      allow read: if true;
+      allow delete: if v2Staff();
+      allow create, update: if v2Staff() && v2SizeOk() && v2ImageOrPdf();
+    }
+    match /equines/{v2Path=**} {
+      allow read: if true;
+      allow delete: if v2Staff();
+      allow create, update: if v2Staff() && v2SizeOk() && v2StaffFile();
+    }
+
+    // Documentos internos (só a equipe)
+    match /customers/{v2Path=**} {
+      allow read, delete: if v2Staff();
+      allow create, update: if v2Staff() && v2SizeOk() && v2StaffFile();
+    }
+    match /sales/{v2Path=**} {
+      allow read, delete: if v2Staff();
+      allow create, update: if v2Staff() && v2SizeOk() && v2StaffFile();
+    }
+
+    // Comprovantes do cliente do portal (o próprio cliente lê e envia; não apaga)
+    match /portal/{v2User}/{v2Path=**} {
+      allow read: if (v2SignedIn() && request.auth.uid == v2User) || v2Staff();
+      allow delete: if v2Staff();
+      allow create, update: if v2SignedIn() && request.auth.uid == v2User && v2SizeOk() && v2ImageOrPdf();
+    }
+
+    // ------------------------------------------------------------ SISTEMA ANTIGO (transição)
+    // Mesmo comportamento das regras do sistema atual (v1). Remova quando o antigo for desligado.
+    function legacyStaff() {
+      return v2SignedIn() && (v2Email().matches('.*@mvgbalimentacao[.]com') || v2Email() == 'willian@mvgbalimentacao.com');
+    }
+    function legacyReceipt() {
+      return request.resource.size <= 8 * 1024 * 1024
+        && request.resource.contentType != null
+        && request.resource.contentType.matches('image/(jpeg|jpg|png|webp|heic|heif)|application/pdf');
+    }
+    function legacyDocument() {
+      return request.resource.size <= 8 * 1024 * 1024
+        && request.resource.contentType != null
+        && request.resource.contentType.matches('application/pdf|application/xml|text/xml|image/(jpeg|jpg|png|webp|heic|heif)');
+    }
+    match /portal_receipts/{uid}/{orderId}/{fileName} {
+      allow read: if (v2SignedIn() && request.auth.uid == uid) || legacyStaff();
+      allow write: if v2SignedIn() && request.auth.uid == uid && v2Verified() && legacyReceipt();
+      allow delete: if legacyStaff();
+    }
+    match /sales_invoices/{saleId}/{fileName} {
+      allow read: if v2SignedIn();
+      allow write: if v2SignedIn() && legacyDocument();
+      allow delete: if v2SignedIn();
+    }
+    match /equine_health/{equineId}/{uid}/{fileName} {
+      allow read, delete: if legacyStaff();
+      allow write: if legacyStaff() && legacyDocument();
+    }
+    match /customer_documents/{uid}/{fileName} {
+      allow read, delete: if legacyStaff();
+      allow write: if legacyStaff() && legacyDocument();
+    }
+  }
+}

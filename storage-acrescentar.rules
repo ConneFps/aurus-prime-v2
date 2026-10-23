@@ -1,0 +1,78 @@
+    // =========================================================================
+    // AURUS PRIME 2.0 — BLOCO PARA ACRESCENTAR às regras do Storage
+    //
+    // NÃO apague nada do que já está publicado. Cole este bloco inteiro logo
+    // depois da linha  `match /b/{bucket}/o {`  das regras atuais e publique.
+    //
+    // Por que é seguro para o sistema atual: no Storage, uma regra só ACRESCENTA
+    // permissão — ela nunca tira o que outra regra já libera. E este bloco só
+    // cuida das pastas do sistema novo (catalog, products, settings, equines,
+    // customers, sales, portal). As pastas do sistema atual continuam com as
+    // regras de hoje.
+    // =========================================================================
+
+    function v2SignedIn() { return request.auth != null; }
+    function v2Email() { return request.auth.token.get('email', '').lower(); }
+    function v2Verified() { return request.auth.token.get('email_verified', false) == true; }
+    function v2Corporate() {
+      return v2SignedIn() && v2Verified()
+        && v2Email().matches('.*@(mvgbalimentacao|grtbalimentacao|girassolalimentacao|aurusprime)[.]com');
+    }
+    function v2Profile() {
+      return firestore.get(/databases/aurus-prime-v2/documents/profiles/$(request.auth.uid)).data;
+    }
+    function v2StaffProfile() {
+      return v2SignedIn()
+        && v2Profile().role in ['ADMIN', 'MANAGER', 'FINANCIAL', 'SELLER', 'LOGISTICS', 'OPERATOR']
+        && v2Profile().active == true;
+    }
+    function v2Staff() { return v2Corporate() || v2StaffProfile(); }
+    function v2SizeOk() { return request.resource.size <= 15 * 1024 * 1024; }
+    function v2ImageOrPdf() {
+      return request.resource.contentType != null
+        && request.resource.contentType.matches('image/.*|application/pdf');
+    }
+    function v2StaffFile() {
+      return v2ImageOrPdf() || request.resource.contentType.matches('application/xml|text/xml');
+    }
+
+    // Fotos (leitura pública; a equipe envia e apaga)
+    match /catalog/{v2Path=**} {
+      allow read: if true;
+      allow delete: if v2Staff();
+      allow create, update: if v2Staff() && v2SizeOk() && v2ImageOrPdf();
+    }
+    match /products/{v2Path=**} {
+      allow read: if true;
+      allow delete: if v2Staff();
+      allow create, update: if v2Staff() && v2SizeOk() && v2ImageOrPdf();
+    }
+    match /settings/{v2Path=**} {
+      allow read: if true;
+      allow delete: if v2Staff();
+      allow create, update: if v2Staff() && v2SizeOk() && v2ImageOrPdf();
+    }
+    match /equines/{v2Path=**} {
+      allow read: if true;
+      allow delete: if v2Staff();
+      allow create, update: if v2Staff() && v2SizeOk() && v2StaffFile();
+    }
+
+    // Documentos internos (só a equipe)
+    match /customers/{v2Path=**} {
+      allow read, delete: if v2Staff();
+      allow create, update: if v2Staff() && v2SizeOk() && v2StaffFile();
+    }
+    match /sales/{v2Path=**} {
+      allow read, delete: if v2Staff();
+      allow create, update: if v2Staff() && v2SizeOk() && v2StaffFile();
+    }
+
+    // Comprovantes do cliente do portal (o próprio cliente lê e envia; não apaga)
+    match /portal/{v2User}/{v2Path=**} {
+      allow read: if (v2SignedIn() && request.auth.uid == v2User) || v2Staff();
+      allow delete: if v2Staff();
+      allow create, update: if v2SignedIn() && request.auth.uid == v2User && v2SizeOk() && v2ImageOrPdf();
+    }
+
+    // ===================== fim do bloco do Aurus Prime 2.0 =====================

@@ -1,0 +1,390 @@
+rules_version = '2';
+
+// =============================================================================
+// Aurus Prime 2.0 — Opção B (Firebase) — REGRAS DO FIRESTORE
+// Banco NOMEADO: aurus-prime-v2  (publique estas regras NESTE banco; o banco
+// do sistema antigo continua com as regras dele).
+//
+// Perfis:
+//  - Equipe interna (ADMIN, MANAGER, FINANCIAL, SELLER, LOGISTICS, OPERATOR,
+//    com profile ativo): lê e grava as coleções de negócio. As permissões finas
+//    de cada papel ficam nas operações (shared/src/ops) e na interface.
+//  - Vendedor externo (EXTERNAL_SELLER): catálogo/estoque/preços em leitura e só
+//    os PRÓPRIOS clientes, pedidos, solicitações e comissões.
+//  - Cliente do portal (portal_accounts/{uid}): só a própria conta, o próprio
+//    cliente e os próprios pedidos; catálogo, zonas de frete e configurações.
+//  - Público (sem login): só links de catálogo ativos.
+// Consultas de usuários restritos PRECISAM filtrar pelo dono (o backend
+// acrescenta sozinho: sellerId / requestedById / portalAccountId == uid).
+// Tudo o que não está liberado aqui é negado.
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------- básicos
+    function isSignedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+    function tokenEmail() { return request.auth.token.get('email', '').lower(); }
+    function emailVerified() { return request.auth.token.get('email_verified', false) == true; }
+    function emailDomain() {
+      let parts = tokenEmail().split('@');
+      return parts[parts.size() - 1];
+    }
+    function docPath(coll, id) { return /databases/$(database)/documents/$(coll)/$(id); }
+
+    // Campos alterados numa atualização.
+    function changedKeys() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function onlyChanged(keys) { return changedKeys().hasOnly(keys); }
+    function changed(key) { return changedKeys().hasAny([key]); }
+
+    // ------------------------------------------------------------- perfil interno
+    function profilePath() { return docPath('profiles', uid()); }
+    function hasProfile() { return isSignedIn() && exists(profilePath()); }
+    function me() { return get(profilePath()).data; }
+    function role() { return me().role; }
+    function hasRole(roles) { return hasProfile() && me().get('active', false) == true && role() in roles; }
+    function isStaff() { return hasRole(['ADMIN', 'MANAGER', 'FINANCIAL', 'SELLER', 'LOGISTICS', 'OPERATOR']); }
+    function isAdmin() { return hasRole(['ADMIN']); }
+    function isManager() { return hasRole(['MANAGER']); }
+    function isAdminOrManager() { return hasRole(['ADMIN', 'MANAGER']); }
+    function isExtSeller() { return hasRole(['EXTERNAL_SELLER']); }
+
+    // ------------------------------------------------------------- cliente do portal
+    function portalPath() { return docPath('portal_accounts', uid()); }
+    function hasPortalAcct() { return isSignedIn() && exists(portalPath()); }
+    function portalAcct() { return get(portalPath()).data; }
+    function isPortalUser() { return hasPortalAcct() && portalAcct().status in ['PENDING', 'APPROVED']; }
+    function isApprovedCustomer() { return hasPortalAcct() && portalAcct().status == 'APPROVED'; }
+    function isFinanceRole() { return hasRole(['ADMIN', 'MANAGER', 'FINANCIAL']); }
+
+    // Convite do portal (portal_invites/{e-mail do token}): só vale com e-mail confirmado.
+    function portalInvitePath() { return docPath('portal_invites', tokenEmail()); }
+    function portalInvite() { return get(portalInvitePath()).data; }
+    function canClaimPortalInvite() {
+      return isSignedIn() && emailVerified() && exists(portalInvitePath()) && portalInvite().status == 'PENDING';
+    }
+
+    // ------------------------------------------------------------- primeiro acesso / convites
+    function settingsPath() { return docPath('settings', 'main'); }
+    // Sistema ainda sem administrador: settings/main não existe ou bootstrapped != true.
+    function bootstrapOpen() {
+      return !exists(settingsPath()) || get(settingsPath()).data.get('bootstrapped', false) != true;
+    }
+    function corporateDomains() { return get(settingsPath()).data.get('corporateDomains', []); }
+    function isCorporateEmail() {
+      return exists(settingsPath())
+        && (emailDomain() in corporateDomains() || ('@' + emailDomain()) in corporateDomains());
+    }
+    function invitePath() { return docPath('invites', tokenEmail()); }
+    function invitedAs(r) {
+      return exists(invitePath())
+        && get(invitePath()).data.status == 'PENDING'
+        && get(invitePath()).data.role == r;
+    }
+
+    // O próprio usuário cria o SEU profile com papel coerente:
+    //  - papel do convite pendente (invites/{e-mail do token});
+    //  - ADMIN só no primeiro acesso, gravando settings/main com bootstrapped = true na MESMA escrita;
+    //  - OPERATOR se o domínio do e-mail está em settings.corporateDomains.
+    // Sempre com e-mail confirmado (senão qualquer um cadastraria e-mail alheio com senha).
+    function validOwnNewProfile(userId) {
+      let d = request.resource.data;
+      return isSignedIn() && userId == uid() && emailVerified()
+        && d.email == tokenEmail()
+        && d.active == true
+        && (
+          invitedAs(d.role)
+          || (d.role == 'ADMIN' && !exists(portalPath()) && bootstrapOpen()
+              && getAfter(settingsPath()).data.get('bootstrapped', false) == true)
+          || (d.role == 'OPERATOR' && !exists(portalPath()) && isCorporateEmail())
+        );
+    }
+
+    // Escrita de settings/main no primeiro acesso (junto com o profile ADMIN).
+    function bootstrapSettingsWrite() {
+      return isSignedIn() && emailVerified()
+        && (resource == null || resource.data.get('bootstrapped', false) != true)
+        && request.resource.data.get('bootstrapped', false) == true
+        && !exists(profilePath())
+        && getAfter(profilePath()).data.role == 'ADMIN';
+    }
+
+    // ------------------------------------------------------------- vendas
+    function customerOfSeller(customerId) {
+      return get(docPath('customers', customerId)).data.get('sellerId', null) == uid();
+    }
+
+    function extSellerCanCreateSale() {
+      let d = request.resource.data;
+      return d.sellerId == uid()
+        && d.channel == 'EXTERNAL_SELLER'
+        && d.status in ['DRAFT', 'PENDING_APPROVAL']
+        && d.get('stockDeducted', false) == false
+        && d.get('approvedById', null) == null
+        && customerOfSeller(d.customerId);
+    }
+
+    function extSellerCanUpdateSale() {
+      let d = request.resource.data;
+      return resource.data.sellerId == uid()
+        && resource.data.status in ['DRAFT', 'PENDING_APPROVAL']
+        && d.sellerId == uid()
+        && d.status in ['DRAFT', 'PENDING_APPROVAL']
+        && d.get('stockDeducted', false) == false
+        && d.get('approvedById', null) == null
+        && (d.channel == 'EXTERNAL_SELLER' || !changed('channel'))
+        && !changedKeys().hasAny(['number', 'sequence', 'portalAccountId', 'createdById', 'createdAt'])
+        && (!changed('customerId') || customerOfSeller(d.customerId));
+    }
+
+    function portalCanCreateSale() {
+      let d = request.resource.data;
+      return d.channel == 'PORTAL'
+        && d.status == 'PENDING_APPROVAL'
+        && d.portalAccountId == uid()
+        && d.customerId == portalAcct().get('customerId', null)
+        && d.get('stockDeducted', false) == false
+        && d.get('approvedById', null) == null;
+    }
+
+    // Cliente: comprovante, aceite/recusa da pesagem (AWAITING_CUSTOMER → READY) e histórico.
+    function portalCanUpdateSale() {
+      let d = request.resource.data;
+      return resource.data.portalAccountId == uid()
+        && !(resource.data.status in ['CANCELLED', 'REJECTED'])
+        && onlyChanged(['paymentReceipt', 'paymentStatus', 'weighing', 'status', 'history', 'updatedAt'])
+        && (!changed('paymentStatus') || d.paymentStatus == 'RECEIPT_SENT')
+        && (!changed('status') || (resource.data.status == 'AWAITING_CUSTOMER' && d.status == 'READY'))
+        && (!changed('weighing') || resource.data.status == 'AWAITING_CUSTOMER')
+        && (!changed('history') || d.history.size() > resource.data.get('history', []).size());
+    }
+
+    function extSellerCanUpdateCustomer() {
+      return resource.data.sellerId == uid()
+        && request.resource.data.sellerId == uid()
+        && !changedKeys().hasAny([
+          'creditLimit', 'financialApproval', 'financialApprovalNotes', 'financialApprovedBy', 'financialApprovedAt',
+          'status', 'priceTableId', 'isIntercompany', 'intercompanyCode', 'allowedPaymentMethods',
+          'totalPurchases', 'ordersCount', 'lastPurchaseAt', 'ranking', 'stars'
+        ]);
+    }
+
+    // =========================================================================
+    // Coleções de negócio só da equipe interna
+    // =========================================================================
+    function isStaffCollection(c) {
+      return c in [
+        'tasks', 'partners', 'batches', 'animals', 'batch_costs', 'feed_types', 'feed_purchases',
+        'feed_consumptions', 'cattle_simulations', 'stock_movements', 'stock_losses', 'processing_orders', 'supply_movements',
+        'deleted_sales', 'equines', 'equine_events', 'equine_sales', 'semen_purchases'
+      ];
+    }
+
+    match /{coll}/{docId} {
+      allow read, write: if isStaffCollection(coll) && isStaff();
+    }
+
+    // =========================================================================
+    // Usuários, convites, configurações, auditoria, contadores
+    // =========================================================================
+
+    match /profiles/{userId} {
+      allow get: if isSignedIn() && (userId == uid() || isStaff() || isExtSeller());
+      allow list: if isStaff() || isExtSeller();
+      allow create: if validOwnNewProfile(userId)
+                    || isAdmin()
+                    || (isManager() && request.resource.data.role == 'EXTERNAL_SELLER');
+      allow update: if isAdmin()
+                    || (isManager()
+                        && resource.data.role == 'EXTERNAL_SELLER'
+                        && request.resource.data.role == 'EXTERNAL_SELLER')
+                    || (isSignedIn() && userId == uid()
+                        && onlyChanged(['lastLoginAt', 'loginCount', 'updatedAt']));
+      allow delete: if isAdmin();
+    }
+
+    // Convites: id = e-mail em minúsculas.
+    match /invites/{inviteId} {
+      allow get: if isSignedIn() && (inviteId == tokenEmail() || isAdminOrManager());
+      allow list: if isAdminOrManager();
+      allow create: if request.resource.data.email == inviteId
+                    && (isAdmin() || (isManager() && request.resource.data.role == 'EXTERNAL_SELLER'));
+      allow update: if isAdmin()
+                    || (isManager()
+                        && resource.data.role == 'EXTERNAL_SELLER'
+                        && request.resource.data.role == 'EXTERNAL_SELLER')
+                    || (isSignedIn() && emailVerified() && inviteId == tokenEmail()
+                        && resource.data.status == 'PENDING'
+                        && request.resource.data.status == 'ACCEPTED'
+                        && request.resource.data.get('profileId', null) == uid()
+                        && onlyChanged(['status', 'acceptedAt', 'profileId', 'updatedAt']));
+      allow delete: if isAdmin() || (isManager() && resource.data.role == 'EXTERNAL_SELLER');
+    }
+
+    // Configurações (doc "main"). bootstrapped nunca volta a false pelo app.
+    match /settings/{settingsId} {
+      allow read: if isSignedIn();
+      allow create, update: if (isAdminOrManager() && request.resource.data.get('bootstrapped', false) == true)
+                            || (settingsId == 'main' && bootstrapSettingsWrite());
+      allow delete: if false;
+    }
+
+    // Auditoria: qualquer usuário autenticado registra as PRÓPRIAS ações; ninguém altera.
+    match /audit_logs/{logId} {
+      allow create: if isSignedIn() && (request.resource.data.get('userId', null) == uid() || isAdmin());
+      allow read: if isAdminOrManager();
+      allow update, delete: if false;
+    }
+
+    // Numeração (pedidos, OS, lotes): só sobe — a equipe pode ajustar.
+    match /counters/{counterId} {
+      allow read: if isSignedIn();
+      allow create, update: if isStaff()
+                            || (isSignedIn()
+                                && (request.resource.data.value is int || request.resource.data.value is float)
+                                && (resource == null || request.resource.data.value > resource.data.get('value', 0)));
+      allow delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // Catálogo, estoque e preços
+    // =========================================================================
+
+    match /products/{id} {
+      allow read: if isStaff() || isExtSeller();
+      allow get: if isApprovedCustomer();          // pedido do portal confere o produto
+      allow write: if isStaff();
+    }
+
+    match /supply_items/{id} {
+      allow read: if isStaff() || isExtSeller();
+      allow get: if isApprovedCustomer();          // materiais vendáveis no portal
+      allow write: if isStaff();
+    }
+
+    match /stock_lots/{id} {
+      allow read: if isStaff() || isExtSeller();
+      allow write: if isStaff();
+    }
+
+    match /price_tables/{id} {
+      allow read: if isStaff() || isExtSeller();
+      // Cliente do portal lê só a tabela negociada do próprio cliente.
+      allow get: if isApprovedCustomer()
+                 && get(docPath('customers', portalAcct().customerId)).data.get('priceTableId', null) == id;
+      allow write: if isStaff();
+    }
+
+    match /catalog_items/{id} {
+      allow read: if isStaff() || isExtSeller() || isPortalUser();
+      allow write: if isStaff();
+    }
+
+    match /freight_zones/{id} {
+      allow read: if isStaff() || isExtSeller() || isPortalUser();
+      allow write: if isStaff();
+    }
+
+    // =========================================================================
+    // Clientes, pedidos e financeiro
+    // =========================================================================
+
+    match /customers/{customerId} {
+      allow read: if isStaff()
+                  || (isExtSeller() && resource.data.sellerId == uid())
+                  || (isPortalUser() && customerId == portalAcct().get('customerId', null));
+      // Vendedor interno não cadastra direto: faz pré-cadastro e o financeiro libera.
+      allow create: if isStaff() && role() != 'SELLER';
+      allow delete: if isStaff();
+      allow update: if isStaff() || (isExtSeller() && extSellerCanUpdateCustomer());
+    }
+
+    match /customer_requests/{requestId} {
+      allow read: if isStaff() || (isExtSeller() && resource.data.requestedById == uid());
+      allow create: if isStaff()
+                    || (isExtSeller()
+                        && request.resource.data.requestedById == uid()
+                        && request.resource.data.status == 'PENDING');
+      // Liberar/bloquear (sair de PENDING) é só do financeiro, gerência e administração.
+      allow update: if (isStaff() && (request.resource.data.status == 'PENDING' || isFinanceRole()))
+                    || (isExtSeller()
+                        && resource.data.requestedById == uid()
+                        && resource.data.status == 'PENDING'
+                        && request.resource.data.requestedById == uid()
+                        && request.resource.data.status == 'PENDING');
+      allow delete: if isStaff()
+                    || (isExtSeller() && resource.data.requestedById == uid() && resource.data.status == 'PENDING');
+    }
+
+    match /sales/{saleId} {
+      allow read: if isStaff()
+                  || (isExtSeller() && resource.data.sellerId == uid())
+                  || (isPortalUser() && resource.data.portalAccountId == uid());
+      allow create: if isStaff()
+                    || (isExtSeller() && extSellerCanCreateSale())
+                    || (isApprovedCustomer() && portalCanCreateSale());
+      allow update: if isStaff()
+                    || (isExtSeller() && extSellerCanUpdateSale())
+                    || (isApprovedCustomer() && portalCanUpdateSale());
+      allow delete: if isStaff();
+    }
+
+    match /financial_entries/{entryId} {
+      allow read: if isStaff() || (isExtSeller() && resource.data.sellerId == uid());
+      allow write: if isStaff();
+    }
+
+    // =========================================================================
+    // Portal do cliente
+    // =========================================================================
+
+    match /portal_accounts/{accountId} {
+      allow read: if isStaff() || (isSignedIn() && accountId == uid());
+      allow create: if isAdminOrManager()
+                    || (isSignedIn() && accountId == uid()
+                        && request.resource.data.status == 'PENDING'
+                        && request.resource.data.get('customerId', null) == null
+                        && request.resource.data.email == tokenEmail())
+                    // Convite: a conta já nasce aprovada e ligada ao cliente do convite.
+                    || (accountId == uid() && canClaimPortalInvite()
+                        && request.resource.data.email == tokenEmail()
+                        && request.resource.data.status == 'APPROVED'
+                        && request.resource.data.customerId == portalInvite().customerId);
+      allow update: if isAdminOrManager()
+                    || (isSignedIn() && accountId == uid()
+                        && onlyChanged(['phone', 'companyName', 'zipCode', 'street', 'number', 'complement',
+                                        'district', 'city', 'state', 'lastLoginAt', 'updatedAt']))
+                    || (accountId == uid() && canClaimPortalInvite()
+                        && resource.data.status == 'PENDING'
+                        && request.resource.data.status == 'APPROVED'
+                        && request.resource.data.customerId == portalInvite().customerId
+                        && onlyChanged(['status', 'customerId', 'approvedByName', 'approvedAt', 'lastLoginAt', 'updatedAt']));
+    }
+
+    match /portal_invites/{inviteId} {
+      allow get: if isStaff() || (isSignedIn() && inviteId == tokenEmail());
+      allow list: if isStaff();
+      allow create, delete: if isAdminOrManager();
+      allow update: if isAdminOrManager()
+                    || (isSignedIn() && emailVerified() && inviteId == tokenEmail()
+                        && resource.data.status == 'PENDING'
+                        && request.resource.data.status == 'ACCEPTED'
+                        && request.resource.data.accountId == uid()
+                        && onlyChanged(['status', 'acceptedAt', 'accountId', 'updatedAt']));
+      allow delete: if isAdminOrManager();
+    }
+
+    // Link público de catálogo (id = token): qualquer pessoa abre se estiver ativo
+    // e só pode somar +1 nas visualizações.
+    match /public_catalog_links/{token} {
+      allow get: if resource.data.active == true || isStaff();
+      allow list: if isStaff();
+      allow create, delete: if isStaff();
+      allow update: if isStaff()
+                    || (resource.data.active == true
+                        && onlyChanged(['views'])
+                        && request.resource.data.views == resource.data.get('views', 0) + 1);
+    }
+  }
+}

@@ -1,0 +1,145 @@
+/*
+ * Base visual compartilhada. Cada opção define os valores dos tokens em
+ * seu próprio theme.css (cores, fontes, raios, sombras). Os componentes
+ * usam SOMENTE estes nomes semânticos:
+ *
+ *   bg-bg  bg-surface  bg-surface-2  bg-surface-3  border-border  border-border-strong
+ *   text-fg  text-muted  text-subtle
+ *   bg-primary text-primary-fg  bg-primary-soft text-primary
+ *   bg-accent text-accent-fg  bg-accent-soft text-accent
+ *   success / warning / danger / info  (+ -soft)
+ *   font-sans  font-display  font-mono     rounded-card  rounded-control  shadow-card  shadow-pop
+ */
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-primary: var(--primary);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-hover: var(--primary-hover);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-fg: var(--sidebar-fg);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-border: var(--sidebar-border);
+
+  --font-sans: var(--font-body);
+  --font-display: var(--font-heading);
+  --font-mono: var(--font-numeric);
+
+  --radius-card: var(--r-card);
+  --radius-control: var(--r-control);
+  --radius-pill: 999px;
+
+  --shadow-card: var(--sh-card);
+  --shadow-pop: var(--sh-pop);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  ::selection {
+    background: var(--primary-soft);
+    color: var(--fg);
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+    color: inherit;
+  }
+  input[type='date']::-webkit-calendar-picker-indicator {
+    filter: var(--date-icon-filter, none);
+    opacity: 0.7;
+    cursor: pointer;
+  }
+  /* rolagem discreta */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+}
+
+@layer utilities {
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .scroll-x {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .hairline {
+    border-color: var(--border);
+  }
+}
+
+@keyframes ui-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ui-pop-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes ui-slide-in {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes ui-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.anim-fade { animation: ui-fade-in 140ms ease-out both; }
+.anim-pop { animation: ui-pop-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.anim-slide { animation: ui-slide-in 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 0px, var(--surface-3) 120px, var(--surface-2) 240px);
+  background-size: 800px 100%;
+  animation: ui-shimmer 1.2s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .anim-fade, .anim-pop, .anim-slide, .skeleton { animation: none; }
+}
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; color: #000; }
+}

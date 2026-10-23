@@ -1,0 +1,122 @@
+/* ===========================================================================
+ * OPÇÃO B — "Campo Claro": claro, arejado, verde campo + âmbar
+ * =========================================================================== */
+@import 'tailwindcss';
+@import './shared/ui/base.css';
+
+@source './';
+@source './shared';
+
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+:root {
+  --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-numeric: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --r-card: 14px;
+  --r-control: 10px;
+}
+
+/* ---------- Claro (padrão) ---------- */
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --surface-2: #f3f2ed;
+  --surface-3: #e9e7e0;
+  --border: #e6e3db;
+  --border-strong: #d5d1c6;
+  --fg: #1b1a17;
+  --muted: #625e55;
+  --subtle: #8f8a80;
+  --primary: #1e6b45;
+  --primary-hover: #185a3a;
+  --primary-fg: #ffffff;
+  --primary-soft: #e4f1ea;
+  --accent: #b7791f;
+  --accent-fg: #ffffff;
+  --accent-soft: #fbf0dc;
+  --success: #15803d;
+  --success-soft: #e5f5ea;
+  --warning: #b45309;
+  --warning-soft: #fdf1e0;
+  --danger: #c0262d;
+  --danger-soft: #fdeaea;
+  --info: #1d6fb8;
+  --info-soft: #e8f1fb;
+  --sidebar: #ffffff;
+  --sidebar-fg: #1b1a17;
+  --sidebar-muted: #8f8a80;
+  --sidebar-active: #e4f1ea;
+  --sidebar-border: #e6e3db;
+  --focus: #1e6b45;
+  --sh-card: 0 1px 2px rgba(24, 22, 16, 0.04), 0 1px 1px rgba(24, 22, 16, 0.03);
+  --sh-pop: 0 18px 44px -14px rgba(24, 22, 16, 0.22), 0 0 0 1px rgba(24, 22, 16, 0.05);
+  --date-icon-filter: none;
+  /* gráficos: série única em verde; multi-série na paleta validada (modo claro) */
+  --chart-primary: #1e6b45;
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-6: #008300;
+  --chart-7: #4a3aa7;
+  --chart-8: #e34948;
+  --chart-grid: #eeece6;
+}
+
+/* ---------- Escuro ---------- */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #111312;
+  --surface: #181b1a;
+  --surface-2: #1f2321;
+  --surface-3: #282d2a;
+  --border: #272b29;
+  --border-strong: #363b38;
+  --fg: #eef1ee;
+  --muted: #a3aaa5;
+  --subtle: #747b76;
+  --primary: #4fb37f;
+  --primary-hover: #63c18f;
+  --primary-fg: #08130d;
+  --primary-soft: rgba(79, 179, 127, 0.14);
+  --accent: #e0a94a;
+  --accent-fg: #160f03;
+  --accent-soft: rgba(224, 169, 74, 0.14);
+  --success: #4fb37f;
+  --success-soft: rgba(79, 179, 127, 0.13);
+  --warning: #e3a846;
+  --warning-soft: rgba(227, 168, 70, 0.14);
+  --danger: #ec7468;
+  --danger-soft: rgba(236, 116, 104, 0.14);
+  --info: #79a9e8;
+  --info-soft: rgba(121, 169, 232, 0.13);
+  --sidebar: #181b1a;
+  --sidebar-fg: #eef1ee;
+  --sidebar-muted: #747b76;
+  --sidebar-active: rgba(79, 179, 127, 0.14);
+  --sidebar-border: #272b29;
+  --focus: #4fb37f;
+  --sh-card: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --sh-pop: 0 22px 54px -16px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --date-icon-filter: invert(0.85);
+  --chart-primary: #4fb37f;
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-6: #008300;
+  --chart-7: #9085e9;
+  --chart-8: #e66767;
+  --chart-grid: #252927;
+}
+
+h1,
+h2,
+.font-display {
+  letter-spacing: -0.02em;
+}

@@ -1,0 +1,12 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    { "collectionGroup": "sales", "fieldPath": "items", "indexes": [] },
+    { "collectionGroup": "sales", "fieldPath": "history", "indexes": [] },
+    { "collectionGroup": "deleted_sales", "fieldPath": "snapshot", "indexes": [] },
+    { "collectionGroup": "audit_logs", "fieldPath": "data", "indexes": [] },
+    { "collectionGroup": "processing_orders", "fieldPath": "returns", "indexes": [] },
+    { "collectionGroup": "public_catalog_links", "fieldPath": "items", "indexes": [] },
+    { "collectionGroup": "price_tables", "fieldPath": "items", "indexes": [] }
+  ]
+}

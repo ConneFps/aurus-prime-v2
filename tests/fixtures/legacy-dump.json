@@ -1,0 +1,640 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "timestamp": "2026-09-30T18:00:00.000Z",
+    "generatedBy": "admin@mvgbalimentacao.com",
+    "type": "MANUAL_FIRESTORE"
+  },
+  "system_config": [
+    { "id": "backup_settings", "autoBackupEnabled": true, "frequency": "WEEKLY", "includeCosts": true }
+  ],
+  "portal_settings": [
+    {
+      "id": "delivery",
+      "zones": [
+        { "id": "z-campinas", "label": "Campinas", "cepPrefixes": ["130", "131"], "price": 25, "minOrderValue": 150, "etaNote": "Entrega em 1 dia" },
+        { "label": "Valinhos", "cepPrefixes": ["13270-000"], "price": "30,00" }
+      ],
+      "freeAboveValue": 800,
+      "pickupEnabled": true,
+      "pickupAddress": "Rua do Frigorífico, 100",
+      "pickupNote": "Retirada das 8h às 17h",
+      "cutoffHour": 15,
+      "blockedDates": ["2026-12-25", "01/01/2027"],
+      "weekendPolicy": "NEXT_FRIDAY"
+    }
+  ],
+  "users": [
+    { "id": "uid-admin", "uid": "uid-admin", "email": "Admin@MVGBalimentacao.com", "displayName": "Willian Admin", "role": "ADMIN", "createdAt": "2026-01-10T12:00:00.000Z" },
+    { "id": "uid-op", "uid": "uid-op", "email": "operador@mvgbalimentacao.com", "displayName": "Op Antigo", "role": "USER", "createdAt": "2026-01-11T12:00:00.000Z" },
+    { "id": "uid-vend", "uid": "uid-vend", "email": "vendas@mvgbalimentacao.com", "displayName": "Marcos Vendas", "role": "SELLER" },
+    { "id": "uid-noemail", "displayName": "Sem Email", "role": "USER" }
+  ],
+  "external_sellers": [
+    { "id": "renato@gmail.com", "email": "renato@gmail.com", "name": "Renato Externo", "phone": "19999990000", "commissionRate": 3, "status": "ACTIVE", "linkedUid": "uid-renato", "ownerId": "uid-admin", "createdAt": "2026-03-01T10:00:00.000Z" },
+    { "id": "bloqueado@gmail.com", "email": "bloqueado@gmail.com", "name": "Vendedor Bloqueado", "commissionRate": "2,5", "status": "BLOCKED", "ownerId": "uid-admin", "createdAt": "2026-03-02T10:00:00.000Z" }
+  ],
+  "sellers": [
+    { "id": "sel-1", "name": "Fazenda Boa Vista", "document": "123.456.789-09", "city": "Mococa", "state": "SP", "ownerId": "uid-admin", "createdAt": "2026-01-15T10:00:00.000Z" }
+  ],
+  "slaughterhouses": [
+    { "id": "sh-1", "name": "Frigorífico Central", "document": "11.222.333/0001-81", "inspectedBy": "SIF", "city": "Campinas", "state": "SP", "ownerId": "uid-admin", "createdAt": "2026-01-16T10:00:00.000Z" }
+  ],
+  "products": [
+    { "id": "prod-picanha", "name": "Picanha", "category": "Traseiro", "meatType": "GRILL", "minStockLimit": 10, "ownerId": "uid-admin", "createdAt": "2026-01-20T10:00:00.000Z" },
+    { "id": "prod-alcatra", "name": "Alcatra", "category": "Traseiro", "meatType": "GRILL", "ownerId": "uid-admin", "createdAt": "2026-01-20T10:00:00.000Z" },
+    { "id": "prod-acem", "name": "Acém", "category": "Dianteiro", "meatType": "PROCESSED", "ownerId": "uid-admin", "createdAt": "2026-01-20T10:00:00.000Z" },
+    { "id": "prod-contrafile", "name": "Contra Filé", "category": "Traseiro", "meatType": "GRILL", "ownerId": "uid-admin", "createdAt": "2026-01-20T10:00:00.000Z" }
+  ],
+  "supply_items": [
+    { "id": "sup-sacola", "name": "Sacola Personalizada", "category": "EMBALAGEM", "unit": "UN", "currentQty": 90, "minQty": 20, "unitCost": 1.5, "salePrice": 5, "isCustomBagItem": true, "active": true, "ownerId": "uid-admin", "createdAt": "2026-02-28T10:00:00.000Z" }
+  ],
+  "supply_movements": [
+    { "id": "sm-1", "supplyItemId": "sup-sacola", "supplyItemName": "Sacola Personalizada", "type": "IN", "quantity": 100, "unitCost": 1.5, "totalValue": 150, "date": "2026-03-01", "invoiceNumber": "NF-SAC-1", "ownerId": "uid-admin", "createdAt": "2026-03-01T10:00:00.000Z" },
+    { "id": "sm-2", "supplyItemId": "sup-sacola", "supplyItemName": "Sacola Personalizada", "type": "OUT", "quantity": 10, "date": "2026-04-02", "saleId": "sale-1", "orderNumber": "20260001", "customerName": "Churrascaria Fogo Bom LTDA", "ownerId": "uid-admin", "createdAt": "2026-04-02T13:05:00.000Z" },
+    { "id": "sm-3", "supplyItemId": "sup-apagado", "supplyItemName": "Etiqueta antiga", "type": "IN", "quantity": 5, "date": "2026-04-03", "ownerId": "uid-admin", "createdAt": "2026-04-03T10:00:00.000Z" }
+  ],
+  "batches": [
+    {
+      "id": "b-1",
+      "name": "Lote 001 - Março 2026",
+      "managementType": "CAMPO",
+      "count": 3,
+      "status": "SLAUGHTERED",
+      "sellerId": "sel-1",
+      "sellerName": "Fazenda Boa Vista",
+      "slaughterhouseId": "sh-1",
+      "slaughterhouse": "Frigorífico Central",
+      "slaughterDate": "2026-05-20",
+      "slaughterWeightKg": 780,
+      "exitScaleWeightKg": 1350,
+      "carcassYieldPercent": 57.8,
+      "gtaNumber": "GTA-123",
+      "sellingPricePerKg": 24,
+      "ownerId": "uid-admin",
+      "createdAt": "2026-03-05T12:00:00.000Z",
+      "updatedAt": "2026-05-20T18:00:00.000Z",
+      "animals": [
+        { "id": "an-1", "tag": "BR001", "initialWeightKg": 400, "purchasePrice": 3000, "finalWeightKg": 260, "status": "SLAUGHTERED", "gender": "MALE" },
+        { "id": "an-2", "tag": "BR002", "initialWeightKg": "410,5", "purchasePrice": 3100, "finalWeightKg": 265, "status": "SLAUGHTERED", "gender": "MALE" },
+        { "id": "an-3", "tag": "", "initialWeightKg": 395, "purchasePrice": 2900, "finalWeightKg": 255, "status": "SLAUGHTERED", "gender": "FEMALE" }
+      ],
+      "costs": {
+        "purchasePrice": 9000,
+        "purchaseCommission": 270,
+        "purchaseTransport": 500,
+        "feed": 1200,
+        "lodging": 0,
+        "vaccine": 150,
+        "veterinary": 0,
+        "pasture": 0,
+        "slaughterTransport": 300,
+        "slaughterCost": 450,
+        "slaughterReturn": 600,
+        "hqTransport": 0,
+        "cuttingCost": 0,
+        "deboningLabor": 350,
+        "salesCommission": 0,
+        "taxCredit": 0,
+        "funruralPurchase": 135,
+        "funruralSales": 0,
+        "icmsPurchase": 0,
+        "icmsSales": 0,
+        "senarPurchase": 18,
+        "senarSales": 0,
+        "gtaFee": 25,
+        "inspectionFee": 0,
+        "entryProtocol": 0,
+        "freightCost": 100,
+        "deboningCost": 0,
+        "slaughterReturnFreight": 0,
+        "deboningReturnFreight": 80
+      }
+    },
+    {
+      "id": "b-2",
+      "name": "Lote 002 Confinamento",
+      "managementType": "confinamento",
+      "count": "25",
+      "status": "IN_PASTURE",
+      "ownerId": "uid-admin",
+      "createdAt": { "seconds": 1777000000, "nanoseconds": 0 },
+      "animals": [],
+      "costs": { "purchasePrice": "150.000,00", "feed": "abc" }
+    },
+    {
+      "id": "b-3",
+      "name": "Lote antigo 2025",
+      "count": 10,
+      "status": "FINISHED",
+      "ownerId": "uid-admin",
+      "createdAt": "2025-11-10T10:00:00.000Z",
+      "costs": {}
+    }
+  ],
+  "registered_tags": [
+    { "id": "tag-1", "tag": "BR001", "batchId": "b-1", "animalId": "an-1", "status": "SLAUGHTERED", "ownerId": "uid-admin" }
+  ],
+  "feed_types": [
+    { "id": "ft-1", "name": "Ração Engorda", "description": "22% PB", "ownerId": "uid-admin", "createdAt": "2026-03-01T10:00:00.000Z" }
+  ],
+  "feed_stock": [
+    { "id": "fs-1", "invoiceNumber": "NF-555", "feedTypeId": "ft-1", "weightKg": 1000, "currentWeightKg": 600, "invoiceValue": 2000, "batchIds": ["b-1", "b-inexistente"], "entryDate": "2026-03-10", "status": "AVAILABLE", "ownerId": "uid-admin", "createdAt": "2026-03-10T10:00:00.000Z" }
+  ],
+  "feed_consumption": [
+    { "id": "fc-1", "feedStockId": "fs-1", "batchId": "b-1", "amountKg": 400, "date": "2026-04-01", "periodType": "MONTHLY", "ownerId": "uid-admin", "createdAt": "2026-04-01T10:00:00.000Z" },
+    { "id": "fc-2", "feedStockId": "fs-apagado", "batchId": "b-1", "amountKg": 10, "date": "2026-04-02", "periodType": "WEEKLY", "ownerId": "uid-admin" }
+  ],
+  "inventory": [
+    { "id": "inv-1", "batchId": "L100", "animalBatchId": "b-1", "cutType": "Picanha", "meatType": "GRILL", "weightKg": 12.5, "unitPrice": 60, "totalValue": 750, "status": "IN_STOCK", "entryDate": "2026-05-25", "expiryDate": "2026-08-25", "stockOrigin": "PROPRIO", "ownerId": "uid-admin", "createdAt": "2026-05-25T12:00:00.000Z" },
+    { "id": "inv-2", "batchId": "L101", "cutType": "picanha", "meatType": "GRILL", "weightKg": 7.5, "unitPrice": 58, "totalValue": 435, "status": "IN_STOCK", "entryDate": "2026-05-26", "stockOrigin": "INTERCOMPANY", "originCompany": "GRTB", "originInvoice": "NF-9", "ownerId": "uid-admin", "createdAt": "2026-05-26T12:00:00.000Z" },
+    { "id": "inv-3", "batchId": "L100", "animalBatchId": "b-1", "cutType": "Alcatra", "meatType": "GRILL", "weightKg": 0, "unitPrice": 45, "totalValue": 0, "status": "SOLD", "entryDate": "2026-05-25", "exitDate": "2026-06-01", "ownerId": "uid-admin", "createdAt": "2026-05-25T12:00:00.000Z" },
+    { "id": "inv-4", "batchId": "L102", "cutType": "Acém", "meatType": "PROCESSED", "weightKg": "20,250", "unitPrice": 25, "status": "IN_STOCK", "entryDate": "27/05/2026", "ownerId": "uid-admin", "createdAt": "2026-05-27T12:00:00.000Z" },
+    { "id": "inv-5", "batchId": "L102", "cutType": "Fraldinha", "meatType": "GRILL", "weightKg": 8, "unitPrice": 40, "status": "IN_STOCK", "entryDate": "2026-05-27", "ownerId": "uid-admin", "createdAt": "2026-05-27T12:00:00.000Z" },
+    { "id": "inv-6", "batchId": "b-1", "cutType": "Traseiro", "weightKg": 380, "unitPrice": 0, "totalValue": 0, "status": "IN_STOCK", "entryDate": "2026-05-21", "isSlaughterEntry": true, "invoiceNumber": "NF-ABATE-1", "slaughterhouseId": "sh-1", "slaughterhouseName": "Frigorífico Central", "ownerId": "uid-admin", "createdAt": "2026-05-21T12:00:00.000Z" },
+    { "id": "inv-7", "batchId": "L103", "cutType": "Picanha Angus", "meatType": "GRILL", "weightKg": 5, "unitPrice": 80, "status": "IN_STOCK", "entryDate": "2026-06-02", "ownerId": "uid-admin", "createdAt": "2026-06-02T12:00:00.000Z" },
+    { "id": "inv-8", "batchId": "L100", "cutType": "Alcatra", "meatType": "GRILL", "weightKg": 3, "unitPrice": 45, "status": "SOLD", "entryDate": "2026-05-25", "ownerId": "uid-admin", "createdAt": "2026-05-25T12:00:00.000Z" }
+  ],
+  "price_tables": [
+    {
+      "id": "pt-1",
+      "name": "Tabela Churrasco",
+      "type": "GRILL",
+      "status": "ACTIVE",
+      "approvalStatus": "APPROVED",
+      "items": [
+        { "cutType": "Picanha", "meatType": "GRILL", "pricePerKg": 120 },
+        { "cutType": "Maminha", "meatType": "GRILL", "pricePerKg": 70 }
+      ],
+      "ownerId": "uid-admin",
+      "createdAt": "2026-02-01T10:00:00.000Z",
+      "updatedAt": "2026-02-01T10:00:00.000Z"
+    }
+  ],
+  "customers": [
+    {
+      "id": "cust-1",
+      "name": "Churrascaria Fogo Bom LTDA",
+      "tradeName": "Fogo Bom",
+      "personType": "J",
+      "document": "11.222.333/0001-81",
+      "customerCategory": "EXTERNO_CNPJ",
+      "stateRegistration": "123456",
+      "address": { "street": "Av. Brasil", "number": "100", "neighborhood": "Centro", "city": "Campinas", "state": "sp", "zipCode": "13010-100" },
+      "contact": { "phone": "1933334444", "cellphone": "19999998888", "email": "compras@fogobom.com", "financialEmail": "financeiro@fogobom.com", "responsibleName": "João" },
+      "financial": { "paymentCondition": "28/35", "creditLimit": 20000, "paymentMethod": "BOLETO", "allowedPaymentMethods": ["BOLETO", "PIX", "DINHEIRO"] },
+      "financialApprovalStatus": "APPROVED",
+      "financialApprovedBy": "Financeiro",
+      "commercial": { "segment": "Churrascaria", "salesperson": "Marcos" },
+      "documents": [
+        { "name": "contrato.pdf", "url": "https://firebasestorage.googleapis.com/v0/b/x/o/contrato.pdf", "type": "application/pdf", "size": 2048, "uploadedAt": "2026-02-01T10:00:00.000Z" },
+        { "name": "rg.png", "url": "data:image/png;base64,AAAA", "type": "image/png", "uploadedAt": "2026-02-01T10:00:00.000Z" }
+      ],
+      "status": "ACTIVE",
+      "ranking": "GOLD",
+      "totalPurchases": 99999,
+      "classification": 5,
+      "pricingTableId": "pt-1",
+      "ownerId": "uid-admin",
+      "createdAt": "2026-02-01T10:00:00.000Z"
+    },
+    {
+      "id": "cust-2",
+      "name": "Maria da Silva",
+      "personType": "F",
+      "document": "123.456.789-09",
+      "customerCategory": "INTERNO_PF",
+      "address": { "street": "Rua das Flores", "number": "5", "neighborhood": "Jardim", "city": "Valinhos", "state": "SP", "zipCode": "13270000" },
+      "contact": { "cellphone": "11988887777", "email": "maria@exemplo.com", "responsibleName": "Maria" },
+      "financial": { "paymentCondition": "À vista", "creditLimit": 0, "paymentMethod": "PIX" },
+      "commercial": { "segment": "", "salesperson": "" },
+      "status": "ACTIVE",
+      "ranking": "BRONZE",
+      "totalPurchases": 0,
+      "classification": 0,
+      "ownerId": "uid-admin",
+      "createdAt": "2026-02-05T10:00:00.000Z"
+    },
+    {
+      "id": "cust-3",
+      "name": "GRTB Alimentação",
+      "personType": "J",
+      "document": "22333444000155",
+      "isIntercompanyPartner": true,
+      "intercompanyName": "GRTB",
+      "financial": { "paymentMethod": "TRANSFER" },
+      "financialApprovalStatus": "APPROVED",
+      "status": "ACTIVE",
+      "ownerId": "uid-admin",
+      "createdAt": "2026-02-06T10:00:00.000Z"
+    }
+  ],
+  "order_counters": [
+    { "id": "year_2026", "year": 2026, "lastSequence": 5, "lastOrderNumber": "20260005", "updatedAt": "2026-06-01T10:00:00.000Z" }
+  ],
+  "financial_transactions": [
+    { "id": "tx-1", "usuario_id": "uid-fin", "usuario_email": "financeiro@mvgbalimentacao.com", "data_hora": "2026-05-15T18:30:00.000Z", "valor_original": 560, "valor_pago": 560, "venda_id": "sale-3", "venda_tipo": "BAIXA_LOTE", "parcela_id": "full", "parcela_numero": 1, "ownerId": "uid-fin" },
+    { "id": "tx-2", "usuario_id": "uid-fin", "usuario_email": "financeiro@mvgbalimentacao.com", "data_hora": "2026-07-02T12:00:00.000Z", "valor_original": 202.5, "valor_pago": 202.5, "venda_id": "sale-4", "venda_tipo": "CARNE", "parcela_id": "x2", "parcela_numero": 2, "ownerId": "uid-fin" },
+    { "id": "tx-3", "usuario_id": "uid-admin", "usuario_email": "admin@mvgbalimentacao.com", "data_hora": "2026-07-15T14:00:00.000Z", "valor_original": 30000, "valor_pago": 30000, "venda_id": "eq-1", "venda_tipo": "EQUINO", "parcela_id": "eqi-1", "parcela_numero": 1, "ownerId": "uid-admin" }
+  ],
+  "sales": [
+    {
+      "id": "sale-1",
+      "orderNumber": "20260001",
+      "orderSequence": 1,
+      "customerId": "cust-1",
+      "customerCategory": "EXTERNO_CNPJ",
+      "date": "2026-04-02T13:00:00.000Z",
+      "deliveryDate": "2026-04-03",
+      "approvalStatus": "APPROVED",
+      "stockDeducted": true,
+      "stockDeductionWeightKg": 10,
+      "dispatchedAt": "2026-04-03T10:00:00.000Z",
+      "dispatchedBy": "logistica@mvgbalimentacao.com",
+      "paymentMethod": "COM_NF_BOLETO",
+      "saleType": "COM_NF_BOLETO",
+      "items": [
+        { "inventoryItemId": "inv-1", "batchId": "L100", "cutType": "Picanha", "weightKg": 10, "pricePerKg": 120, "total": 1200, "packetCount": 4, "notes": "Cortar em bifes" },
+        { "cutType": "SACOLA PERSONALIZADA", "unitType": "UN", "quantity": 10, "unitPrice": 5, "weightKg": 0, "pricePerKg": 5, "total": 50, "isCustomBag": true },
+        { "inventoryItemId": "freight-service-item", "cutType": "FRETE - Campinas", "unitType": "UN", "quantity": 1, "unitPrice": 25, "weightKg": 0, "pricePerKg": 0, "total": 25, "isFreight": true }
+      ],
+      "itemsSubtotal": 1250,
+      "totalValue": 1275,
+      "freightValue": 25,
+      "freightCharged": true,
+      "commissionRate": 2,
+      "commissionValue": 25.5,
+      "paymentStatus": "PENDING",
+      "installmentsCount": 2,
+      "installments": [
+        { "id": "inst-a", "number": 1, "dueDate": "2026-04-30", "value": 637.5, "status": "PAID", "paymentDate": "2026-04-30", "paidByUser": "financeiro@mvgbalimentacao.com", "paidAtTime": "30/04/2026, 15:20:00" },
+        { "id": "inst-b", "number": 2, "dueDate": "2026-05-07", "value": 637.5, "status": "PENDING" }
+      ],
+      "boletoInstallments": [
+        { "id": "bi-1", "number": 1, "dueDate": "2026-04-30", "value": 637.5, "boletoNumber": "BOL-1-1", "barcode": "34191790010104351004791020150008291070026000" },
+        { "id": "bi-2", "number": 2, "dueDate": "2026-05-07", "value": 637.5, "boletoNumber": "BOL-1-2" }
+      ],
+      "boletoNumber": "BOL-1",
+      "invoiceNumber": "NF-1001",
+      "invoiceDate": "2026-04-02",
+      "hasInvoiceFile": true,
+      "invoiceChunkCount": 3,
+      "invoiceFileName": "nf-1001.pdf",
+      "nfNotes": "Entregar com a NF impressa",
+      "history": [
+        { "id": "h1", "installmentId": "all", "installmentNumber": 0, "action": "CREATE", "value": 1275, "userEmail": "financeiro@mvgbalimentacao.com", "timestamp": "02/04/2026, 14:00:00" },
+        { "id": "h2", "installmentId": "inst-a", "installmentNumber": 1, "action": "PAYMENT", "value": 637.5, "userEmail": "financeiro@mvgbalimentacao.com", "timestamp": "30/04/2026, 15:20:00" }
+      ],
+      "createdById": "uid-vend",
+      "createdByName": "MARCOS VENDAS",
+      "sellerId": "uid-vend",
+      "sellerName": "Marcos Vendas",
+      "shippingCep": "13010-100",
+      "shippingAddress": "Av. Brasil, 100 - Centro, Campinas/SP",
+      "shippingLocality": "Campinas",
+      "freightZoneId": "z-campinas",
+      "ownerId": "uid-vend",
+      "createdAt": "2026-04-02T13:00:00.000Z",
+      "updatedAt": "2026-04-30T18:20:00.000Z"
+    },
+    {
+      "id": "sale-2",
+      "customerId": "cust-2",
+      "date": "2026-04-10",
+      "approvalStatus": "PENDING",
+      "paymentMethod": "PIX",
+      "pixDiscountPercent": 5,
+      "pixPayload": "00020126580014BR.GOV.BCB.PIX0114050996510021485204000053039865406142.505802BR",
+      "items": [{ "cutType": "Acém", "weightKg": 5, "pricePerKg": 30, "total": 150 }],
+      "totalValue": 150,
+      "commissionRate": 2,
+      "commissionValue": 3,
+      "paymentStatus": "PENDING",
+      "installments": [{ "id": "i1", "number": 1, "dueDate": "2026-04-10", "value": 142.5, "status": "PENDING" }],
+      "createdByName": "MARCOS VENDAS",
+      "createdAt": "2026-04-10T15:00:00.000Z"
+    },
+    {
+      "id": "sale-3",
+      "orderNumber": "20260001",
+      "customerId": "cust-1",
+      "date": "2026-04-15T12:00:00.000Z",
+      "approvalStatus": "APPROVED",
+      "paymentMethod": "BOLETO",
+      "saleType": "APENAS_BOLETO",
+      "paymentStatus": "PAID",
+      "paymentDate": "2026-05-15",
+      "items": [{ "cutType": "Alcatra", "weightKg": 8, "pricePerKg": 70, "total": 560, "inventoryItemId": "inv-3" }],
+      "totalValue": 560,
+      "commissionRate": 2,
+      "commissionValue": 11.2,
+      "boletoDueDate": "2026-05-15",
+      "createdAt": "2026-04-15T12:00:00.000Z"
+    },
+    {
+      "id": "sale-4",
+      "orderNumber": "20260003",
+      "customerId": "cust-1",
+      "date": "2026-05-02T14:00:00.000Z",
+      "approvalStatus": "APPROVED",
+      "stockDeducted": true,
+      "externalSellerId": "renato@gmail.com",
+      "externalSellerName": "Renato Externo",
+      "externalSellerCommissionRate": 3,
+      "commissionRate": 3,
+      "commissionValue": 12.15,
+      "createdById": "uid-renato",
+      "paymentMethod": "CREDIT",
+      "saleType": "CREDIT",
+      "items": [{ "cutType": "Contra Filé", "weightKg": 4.5, "pricePerKg": 90, "total": 405 }],
+      "totalValue": 405,
+      "paymentStatus": "PAID",
+      "installments": {
+        "0": { "id": "x1", "number": 1, "dueDate": "2026-06-01", "value": 202.5, "status": "PAID", "paymentDate": "2026-06-01" },
+        "1": { "id": "x2", "number": 2, "dueDate": "2026-07-01", "value": 202.5, "status": "PAID" }
+      },
+      "createdAt": "2026-05-02T14:00:00.000Z"
+    },
+    {
+      "id": "sale-5",
+      "orderNumber": "20260004",
+      "customerId": "cust-apagado",
+      "customerName": "Cliente Apagado",
+      "date": "2026-05-10",
+      "approvalStatus": "REJECTED",
+      "paymentMethod": "BONIFICACAO",
+      "items": [{ "cutType": "Picanha", "weightKg": 1, "pricePerKg": 0, "total": 0 }],
+      "totalValue": 0,
+      "commissionRate": 0,
+      "commissionValue": 0,
+      "paymentStatus": "PAID",
+      "createdAt": "2026-05-10T12:00:00.000Z"
+    },
+    {
+      "id": "sale-6",
+      "orderNumber": "20250012",
+      "orderSequence": 12,
+      "customerId": "cust-2",
+      "date": "2025-12-20",
+      "approvalStatus": "DRAFT",
+      "paymentMethod": "DINHEIRO",
+      "items": [{ "cutType": "Fraldinha", "weightKg": 2, "pricePerKg": 50, "total": 100 }],
+      "totalValue": 100,
+      "commissionRate": 2,
+      "commissionValue": 2,
+      "paymentStatus": "PENDING",
+      "createdAt": "2025-12-20T12:00:00.000Z"
+    },
+    {
+      "id": "sale-7",
+      "orderNumber": "20260005",
+      "customerId": "cust-3",
+      "date": "2026-06-01",
+      "approvalStatus": "APPROVED",
+      "paymentMethod": "AMOSTRA",
+      "saleType": "AMOSTRA",
+      "isIntercompany": true,
+      "nfTeknisa": "TK-77",
+      "items": [{ "cutType": "Maminha", "weightKg": 1.2, "pricePerKg": 0, "total": 0 }],
+      "totalValue": 0,
+      "commissionRate": 0,
+      "commissionValue": 0,
+      "paymentStatus": "PAID",
+      "createdAt": "2026-06-01T12:00:00.000Z"
+    },
+    {
+      "id": "sale-8",
+      "customerId": "cust-1",
+      "date": "2026-06-10",
+      "approvalStatus": "APPROVED",
+      "paymentMethod": "BOLETO",
+      "saleType": "COM_NF_BOLETO",
+      "items": [
+        { "cutType": "Picanha", "weightKg": 3, "pricePerKg": 120, "total": 360 },
+        { "cutType": "Acém", "weightKg": 2, "pricePerKg": 30, "total": 60 }
+      ],
+      "totalValue": 420,
+      "commissionRate": 2,
+      "commissionValue": 8.4,
+      "paymentStatus": "OVERDUE",
+      "installments": {
+        "0": { "id": "k1", "number": 1, "dueDate": "2026-07-10", "value": 210, "status": "PENDING" },
+        "1": { "id": "k2", "number": 2, "dueDate": "2026-08-10", "value": 210, "status": "OVERDUE" }
+      },
+      "createdAt": "2026-06-10T12:00:00.000Z"
+    }
+  ],
+  "sales_attachments": [
+    { "id": "sale-1_invoice", "saleId": "sale-1", "docType": "invoice", "fileName": "nf-1001.pdf", "fileType": "application/pdf", "fileSize": 120000, "chunkCount": 3 }
+  ],
+  "processing_orders": [
+    {
+      "id": "proc-1",
+      "orderNumber": "OS-2026-001",
+      "batchId": "b-1",
+      "batchName": "Lote 001 - Março 2026",
+      "slaughterhouseId": "sh-1",
+      "slaughterhouseName": "Frigorífico Central",
+      "driverName": "Zé Motorista",
+      "driverLicensePlate": "ABC1D23",
+      "transportFreightCost": 150,
+      "sentDate": "2026-05-22",
+      "status": "COMPLETED",
+      "sentWeightKg": 300,
+      "processingCost": 600,
+      "sentCuts": [{ "cutType": "Traseiro", "weightKg": 300, "costPerKg": 20, "totalCost": 6000, "inventoryItemId": "inv-6" }],
+      "finishedCuts": [
+        { "cutType": "Picanha", "weightKg": 20, "unitPrice": 55, "meatType": "GRILL" },
+        { "cutType": "Alcatra", "weightKg": 60, "unitPrice": 40, "meatType": "GRILL" }
+      ],
+      "returnedWeightKg": 250,
+      "totalLossKg": 50,
+      "yieldPercent": 83.3,
+      "lossDetails": { "bonesKg": 30, "fatKg": 15, "trimmingLossKg": 5 },
+      "ownerId": "uid-admin",
+      "createdAt": "2026-05-22T10:00:00.000Z",
+      "updatedAt": "2026-05-24T10:00:00.000Z"
+    },
+    {
+      "id": "proc-2",
+      "orderNumber": "OS-2026-001",
+      "slaughterhouseName": "Desossa Parceira",
+      "sentDate": "2026-06-01",
+      "status": "PROCESSING",
+      "sentWeightKg": 100,
+      "processingCost": 0,
+      "returnEvents": [
+        { "id": "re-1", "returnDate": "2026-06-05", "returnedWeightKg": 40, "returnType": "PARCIAL", "cuts": [{ "cutType": "Acém", "weightKg": 40, "unitPrice": 22 }], "registeredAt": "2026-06-05T10:00:00.000Z" }
+      ],
+      "ownerId": "uid-admin",
+      "createdAt": "2026-06-01T10:00:00.000Z"
+    }
+  ],
+  "stock_losses": [
+    { "id": "loss-1", "date": "2026-05-23", "origin": "PROCESSAMENTO", "reason": "OSSO", "weightKg": 30, "cutType": "Traseiro", "batchId": "b-1", "processingOrderId": "proc-1", "processingOrderNumber": "OS-2026-001", "slaughterhouseId": "sh-1", "slaughterhouseName": "Frigorífico Central", "registeredBy": "Op Antigo", "ownerId": "uid-op", "createdAt": "2026-05-23T10:00:00.000Z" },
+    { "id": "loss-2", "date": "2026-06-10", "origin": "desconhecida", "reason": "??", "weightKg": "1,5", "cutType": "Picanha", "inventoryItemId": "inv-1", "ownerId": "uid-op" }
+  ],
+  "portal_users": [
+    { "id": "puid-1", "uid": "puid-1", "email": "Cliente@Restaurante.com", "name": "Restaurante Sabor", "document": "33.444.555/0001-66", "phone": "1932323232", "companyName": "Restaurante Sabor LTDA", "address": { "street": "Rua A", "number": "10", "neighborhood": "Cambuí", "city": "Campinas", "state": "SP", "zipCode": "13025-000" }, "status": "APPROVED", "customerId": "cust-1", "createdAt": "2026-05-01T10:00:00.000Z" },
+    { "id": "puid-2", "uid": "puid-2", "email": "novo@cliente.com", "name": "Cliente Novo", "document": "98765432100", "phone": "11911112222", "status": "PENDING", "createdAt": "2026-06-20T10:00:00.000Z" }
+  ],
+  "portal_catalog": [
+    { "id": "pc-1", "name": "Picanha", "category": "Churrasco", "unit": "kg", "unitPrice": 129.9, "priceTableId": "PUBLIC", "published": true, "availableKg": 25, "updatedAt": "2026-06-01T10:00:00.000Z" },
+    { "id": "pc-2", "name": "Picanha", "unit": "kg", "unitPrice": 120, "priceTableId": "pt-1", "published": false, "updatedAt": "2026-05-01T10:00:00.000Z" },
+    { "id": "pc-3", "name": "Carvão 5kg", "category": "Acessórios", "unit": "un", "unitPrice": 35, "priceTableId": "PUBLIC", "published": true, "isAvulso": true, "notes": "Saco de 5 kg" }
+  ],
+  "portal_orders": [
+    {
+      "id": "pord-1",
+      "portalUid": "puid-1",
+      "items": [{ "catalogItemId": "pc-1", "name": "Picanha", "quantityOrdered": 2, "quantityWeighed": 2.1, "unitPrice": 129.9, "totalEstimated": 259.8, "totalFinal": 272.79 }],
+      "itemsTotalEstimated": 259.8,
+      "itemsTotalFinal": 272.79,
+      "freightValue": 25,
+      "totalValueEstimated": 284.8,
+      "totalValueFinal": 297.79,
+      "deliveryMode": "DELIVERY",
+      "deliveryAddress": { "street": "Rua A", "number": "10", "neighborhood": "Cambuí", "city": "Campinas", "state": "SP", "zipCode": "13025-000" },
+      "freightPending": false,
+      "deliveryDate": "2026-06-12",
+      "windowId": "A",
+      "pixTxid": "AURUS123",
+      "status": "DELIVERED",
+      "customerId": "cust-1",
+      "notes": "Interfone 12",
+      "statusHistory": [
+        { "status": "WEIGHING", "at": "2026-06-11T09:00:00.000Z", "by": "logistica@mvgbalimentacao.com" },
+        { "status": "PAID", "at": "2026-06-11T12:00:00.000Z", "by": "financeiro@mvgbalimentacao.com" },
+        { "status": "DELIVERED", "at": "2026-06-12T16:00:00.000Z", "by": "logistica@mvgbalimentacao.com" }
+      ],
+      "weighingOutcome": { "itemsTotalFinal": 272.79, "totalValueFinal": 297.79, "difference": 12.99, "differencePercent": 4.56, "needsApproval": false, "reason": "WITHIN_TOLERANCE", "nextStatus": "AWAITING_PAYMENT" },
+      "receipt": { "storagePath": "portal_receipts/puid-1/pord-1.pdf", "fileName": "comprovante.pdf", "contentType": "application/pdf", "size": 12345, "uploadedAt": "2026-06-11T11:00:00.000Z" },
+      "createdAt": "2026-06-10T15:00:00.000Z",
+      "updatedAt": "2026-06-12T16:00:00.000Z"
+    },
+    {
+      "id": "pord-2",
+      "portalUid": "puid-2",
+      "items": [{ "catalogItemId": "pc-3", "name": "Carvão 5kg", "quantityOrdered": 2, "unitPrice": 35, "totalEstimated": 70 }],
+      "itemsTotalEstimated": 70,
+      "freightValue": 0,
+      "totalValueEstimated": 70,
+      "deliveryMode": "PICKUP",
+      "freightPending": false,
+      "deliveryDate": "2026-06-25",
+      "windowId": "B",
+      "pixTxid": "AURUS456",
+      "status": "AWAITING_PAYMENT",
+      "customerId": null,
+      "createdAt": "2026-06-21T10:00:00.000Z"
+    }
+  ],
+  "customer_requests": [
+    { "id": "cr-1", "name": "Bar do Zé", "personType": "PJ", "document": "44.555.666/0001-77", "customerCategory": "CLIENTE EXTERNO CNPJ", "cep": "13000-000", "street": "Rua B", "number": "20", "neighborhood": "Centro", "city": "Campinas", "state": "SP", "contactName": "Zé", "phone": "1933330000", "cellphone": "19999990001", "email": "ze@bar.com", "status": "PENDING", "requestedByUid": "uid-renato", "requestedByName": "Renato Externo", "requestedByEmail": "renato@gmail.com", "ownerId": "uid-renato", "createdAt": "2026-06-15T10:00:00.000Z" }
+  ],
+  "deleted_sales": [
+    { "id": "sale-del-1", "originalSaleId": "sale-del-1", "orderNumber": "20260002", "customerId": "cust-2", "totalValue": 99, "date": "2026-04-05", "items": [{ "cutType": "Acém", "weightKg": 3.3, "pricePerKg": 30, "total": 99 }], "deletedAt": "2026-04-20T10:00:00.000Z", "deletedByName": "WILLIAN ADMIN", "deletedByEmail": "admin@mvgbalimentacao.com", "deletedById": "uid-admin", "deletionReason": "Pedido duplicado", "ownerId": "uid-admin" }
+  ],
+  "operational_tasks": [
+    { "id": "task-1", "title": "Vacinar lote 1", "assignedTo": "uid-op", "assignedToName": "Op Antigo", "dueDate": "2026-05-01", "status": "COMPLETED", "priority": "HIGH", "createdBy": "uid-admin", "createdByName": "Willian Admin", "ownerId": "uid-admin", "createdAt": "2026-04-20T10:00:00.000Z" },
+    { "id": "task-2", "title": "Comprar sal mineral", "assignedTo": "uid-op", "assignedToName": "Op Antigo", "dueDate": "2026-10-10", "status": "PENDING", "priority": "urgent", "ownerId": "uid-admin", "createdAt": "2026-09-01T10:00:00.000Z" }
+  ],
+  "cattle_simulations": [
+    { "id": "sim-1", "name": "Simulação garrote", "timestamp": "2026-03-01T10:00:00.000Z", "pesoCompra": 300, "valorPago": 2800, "gmdRecria": 0.6, "preçoVendaArroba": 310, "ownerId": "uid-admin" }
+  ],
+  "audit_logs": [
+    { "id": "log-1", "userId": "uid-admin", "userEmail": "admin@mvgbalimentacao.com", "action": "CREATE", "collection": "batches", "documentId": "b-1", "details": "Criou o lote 001", "timestamp": "2026-03-05T12:00:00.000Z", "ownerId": "uid-admin" },
+    { "id": "log-2", "userId": "uid-vend", "userEmail": "vendas@mvgbalimentacao.com", "action": "LOGIN", "collection": "auth", "documentId": "uid-vend", "details": "Login", "timestamp": "2026-04-01T08:00:00.000Z", "ownerId": "uid-vend" }
+  ],
+  "public_catalogs": [
+    {
+      "id": "tok-abc123",
+      "label": "Catálogo Junho",
+      "active": true,
+      "expiresAt": { "seconds": 1782864000, "nanoseconds": 0 },
+      "headline": "Ofertas da semana",
+      "contactPhone": "(19) 99955-4530",
+      "createdAt": "2026-06-01T10:00:00.000Z",
+      "createdBy": "admin@mvgbalimentacao.com",
+      "items": [{ "id": "it-1", "name": "Picanha", "unitPrice": 129.9, "category": "Churrasco", "unit": "kg", "note": "Peça inteira" }]
+    }
+  ],
+  "equines": [
+    {
+      "id": "eq-1",
+      "personalData": { "name": "Trovão", "gender": "GARANHÃO", "birthDate": "2018-03-10", "breed": "Quarto de Milha", "coatColor": "Alazão", "heightCm": 152, "weightKg": 480, "idealWeightKg": 470, "chipId": "CHIP-1", "status": "Vendido" },
+      "documentation": { "abqmRegister": "ABQM-1", "photos": ["https://example.com/trovao.jpg", "data:image/jpeg;base64,xxxx"] },
+      "genealogy": { "fatherName": "Relâmpago", "motherName": "Estrela", "grandparents": { "paternalGrandfather": "Raio" } },
+      "reproduction": { "status": "ATIVO", "offspringNames": ["Faísca", "Brisa"] },
+      "location": { "currentHaras": "Haras Aurus", "paddockBox": "Baia 3", "responsibleManager": "Carlos" },
+      "health": [
+        { "id": "hh1", "date": "2026-02-01", "type": "VACINA", "name": "Influenza", "veterinarian": "Dr. Paulo", "alertDate": "2027-02-01", "attachments": [{ "id": "att1", "name": "exame.pdf", "url": "https://example.com/exame.pdf", "type": "application/pdf" }] },
+        { "id": "hh2", "date": "2026-03-01", "type": "VERMÍFUGO", "name": "Ivermectina", "veterinarian": "Dr. Paulo" }
+      ],
+      "training": [{ "id": "tt1", "date": "2026-03-05", "modality": "RÉDEAS", "durationMinutes": 45, "notes": "Bom desempenho", "performanceScore": 8 }],
+      "manege": [{ "id": "mm1", "date": "2026-03-10", "farrierName": "João Ferrador", "hoofCondition": "BOM", "procedures": "Ferrageamento", "nextFarrierDate": "2026-05-10", "costs": 250 }],
+      "transports": [{ "id": "tr1", "date": "2026-04-01", "origin": "Haras Aurus", "destination": "Exposição Campinas", "vehicle": "Caminhão", "costs": 800 }],
+      "accommodations": [{ "id": "ac1", "location": "Hípica X", "paddockBox": "B2", "checkInDate": "2026-04-01", "checkOutDate": "2026-04-05", "costs": 600 }],
+      "competitions": [{ "id": "cc1", "eventName": "Copa Rédeas", "location": "Campinas", "date": "2026-04-03", "modality": "RÉDEAS", "riderName": "Ana", "placement": "1º Lugar", "prizeValue": 5000, "score": "220" }],
+      "semenCollections": [{ "id": "sc1", "date": "2026-02-15", "collectionMethod": "CONGELADO", "volumeMl": 60, "concentration": "120M/ml", "motilityPercentage": 80, "dosesProduced": 10, "dosesAvailable": 8, "veterinarian": "Dr. Paulo" }],
+      "finances": [
+        { "id": "fi1", "date": "2026-01-10", "type": "EXPENSE", "category": "Alimentação", "description": "Feno", "value": 1200 },
+        { "id": "fi2", "date": "2026-04-03", "type": "REVENUE", "category": "Competição", "description": "Prêmio Copa", "value": 5000 }
+      ],
+      "saleDetails": {
+        "buyerName": "Haras Vizinho",
+        "buyerDocument": "555.666.777-88",
+        "saleDate": "2026-06-15",
+        "totalPrice": 90000,
+        "installmentsCount": 3,
+        "installments": [
+          { "id": "eqi-1", "number": 1, "dueDate": "2026-07-15", "value": 30000, "status": "PAID" },
+          { "id": "eqi-2", "number": 2, "dueDate": "2026-08-15", "value": 30000, "status": "PENDING" },
+          { "id": "eqi-3", "number": 3, "dueDate": "2026-09-15", "value": 30000, "status": "PENDING" }
+        ],
+        "status": "COMPLETED"
+      },
+      "ownerId": "uid-admin",
+      "createdAt": "2026-01-05T10:00:00.000Z",
+      "updatedAt": "2026-06-15T10:00:00.000Z"
+    },
+    {
+      "id": "eq-2",
+      "personalData": { "name": "Estrela", "gender": "ÉGUA", "breed": "Mangalarga", "status": "Prenha" },
+      "reproduction": { "status": "GESTANTE", "isPregnant": true, "pregnancyCoverDate": "2026-01-20", "pregnancyStallionName": "Trovão", "pregnancyExpectedDate": "2026-12-25" },
+      "health": "não é uma lista",
+      "ownerId": "uid-admin",
+      "createdAt": "2026-01-06T10:00:00.000Z"
+    }
+  ],
+  "semen_purchases": [
+    {
+      "id": "sp-1",
+      "stallionName": "Campeão Importado",
+      "supplierName": "Central Genética",
+      "invoiceNumber": "NF-SEM-1",
+      "lotCode": "LT-1",
+      "purchaseDate": "2026-02-20",
+      "dosesQuantity": 10,
+      "dosesAvailable": 6,
+      "dosePrice": 500,
+      "totalValue": 5000,
+      "storageType": "CONGELADO",
+      "canisterLocation": "Botijão A",
+      "installmentsCount": 2,
+      "installments": [
+        { "id": "si1", "number": 1, "dueDate": "2026-03-20", "value": 2500, "status": "PAID", "paymentDate": "2026-03-20", "paidBy": "financeiro@mvgbalimentacao.com" },
+        { "id": "si2", "number": 2, "dueDate": "2026-04-20", "value": 2500, "status": "OVERDUE" }
+      ],
+      "paymentMethod": "BOLETO",
+      "status": "ACTIVE",
+      "registeredBy": "Willian",
+      "ownerId": "uid-admin",
+      "createdAt": "2026-02-20T10:00:00.000Z"
+    }
+  ],
+  "backups": [
+    { "id": "bk-1", "timestamp": "2026-09-01T10:00:00.000Z", "type": "MANUAL", "size": "120 KB", "status": "SUCCESS", "itemsCount": 80 }
+  ],
+  "colecao_misteriosa": [{ "id": "m-1", "foo": "bar" }]
+}

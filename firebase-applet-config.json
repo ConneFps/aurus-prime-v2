@@ -1,13 +1,19 @@
 {
-  "projectId": "gen-lang-client-0404417776",
-  "appId": "1:185790657197:web:497ecca1cb95a087be4c24",
-  "apiKey": "AIzaSyDNl8eBz5dzWrA_VEzPJyVfnLCwJPG0UKA",
-  "authDomain": "gen-lang-client-0404417776.firebaseapp.com",
+  "projectId": "aurus-6b5cf",
+  "appId": "1:768404101051:web:9290541b720ab5db90d69e",
+  "apiKey": "AIzaSyABJNGKgRZGGHbrgrBMlJED8FkoYhuyhgs",
+  "authDomain": "aurus-6b5cf.firebaseapp.com",
   "firestoreDatabaseId": "aurus-prime-v2",
-  "legacyFirestoreDatabaseId": "ai-studio-db14d30c-d5fd-4e32-b39b-2478813a51c5",
-  "storageBucket": "gen-lang-client-0404417776.firebasestorage.app",
-  "messagingSenderId": "185790657197",
-  "measurementId": "",
-  "oAuthClientId": "185790657197-1mhc8ttc2kr00j6bq535g27c09v2s3r5.apps.googleusercontent.com",
-  "recaptchaSiteKey": ""
+  "storageBucket": "aurus-6b5cf.firebasestorage.app",
+  "messagingSenderId": "768404101051",
+  "measurementId": "G-T346ZJ2VXP",
+  "legacy": {
+    "projectId": "gen-lang-client-0404417776",
+    "appId": "1:185790657197:web:497ecca1cb95a087be4c24",
+    "apiKey": "AIzaSyDNl8eBz5dzWrA_VEzPJyVfnLCwJPG0UKA",
+    "authDomain": "gen-lang-client-0404417776.firebaseapp.com",
+    "storageBucket": "gen-lang-client-0404417776.firebasestorage.app",
+    "messagingSenderId": "185790657197",
+    "firestoreDatabaseId": "ai-studio-db14d30c-d5fd-4e32-b39b-2478813a51c5"
+  }
 }

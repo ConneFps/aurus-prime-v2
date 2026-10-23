@@ -452,7 +452,7 @@ function mapPortalOrder(ctx: Ctx, d: Doc, date: string, num_: { number: string; 
   if (saleIds.has(id)) id = `po-${id}`;
   const createdAt = isoDateTime(d.createdAt) || ctx.now;
   const uid = str(d.portalUid);
-  const account = uid ? ctx.get('portal_accounts', uid) : undefined;
+  const account = uid ? ctx.legacyPortalAccounts.get(uid) : undefined;
   const legacyStatus = upper(d.status);
   const status = PORTAL_STATUS[legacyStatus] || 'PENDING_APPROVAL';
   if (!PORTAL_STATUS[legacyStatus]) ctx.w.add('portal.status', 'Pedidos do portal com situação desconhecida (considerados "Pedido recebido")', num_.number);
@@ -542,7 +542,7 @@ function mapPortalOrder(ctx: Ctx, d: Doc, date: string, num_: { number: string; 
     sellerName: null,
     commissionRate: 0,
     commissionValue: 0,
-    portalAccountId: account ? ctx.uid(uid) : null,
+    portalAccountId: account ? ctx.portalUid(uid) : null,
     priceTableId: null,
     date,
     deliveryDate: day(d.deliveryDate),

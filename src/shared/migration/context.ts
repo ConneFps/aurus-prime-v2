@@ -4,7 +4,7 @@
  * provisórios para manter as referências válidas.
  */
 import type { Row, TableName } from '../domain/schema';
-import type { Customer, MeatType, Partner, PartnerKind, Product } from '../domain/types';
+import type { Customer, MeatType, Partner, PartnerKind, PortalAccount, Product } from '../domain/types';
 import { READ_ERRORS_KEY, type LegacyDump } from './collections';
 import { cutScore, docs, isObj, normalizeCut, slug, str, Warnings, type Doc } from './legacy-utils';
 
@@ -18,6 +18,23 @@ export interface TransformOptions {
    * true no Firebase (mesmo projeto → mesmos uids); false no PostgreSQL (uids mudam).
    */
   keepLegacyUserIds?: boolean;
+  /**
+   * O sistema novo está em OUTRO projeto Firebase: os uids mudam. Usuários e contas
+   * do portal são ligados pelo e-mail a quem já entrou no sistema novo (currentUsers /
+   * currentPortalAccounts); contas do portal viram convites.
+   */
+  otherProject?: boolean;
+  currentUsers?: { id: string; email: string }[];
+  currentPortalAccounts?: { id: string; email: string }[];
+}
+
+/** Arquivo que ficou só com o caminho no Storage do projeto antigo (precisa do link de download). */
+export interface LegacyStorageLink {
+  table: TableName;
+  rowId: string;
+  field: string;
+  attachmentId: string;
+  path: string;
 }
 
 /** Arquivo do sistema antigo guardado em pedaços no banco (sales_attachments) a copiar para o Storage. */
@@ -37,6 +54,15 @@ export class Ctx {
   readonly w = new Warnings();
   readonly now: string;
   readonly keepIds: boolean;
+  readonly otherProject: boolean;
+  /** uid antigo → e-mail (usuários internos, vendedores externos) e (contas do portal). */
+  readonly legacyUserEmail = new Map<string, string>();
+  readonly legacyPortalEmail = new Map<string, string>();
+  /** e-mail → id no sistema novo (quem já entrou). */
+  readonly newUserByEmail = new Map<string, string>();
+  readonly newPortalByEmail = new Map<string, string>();
+  /** Contas do portal antigas (por uid antigo), gravadas ou não. */
+  readonly legacyPortalAccounts = new Map<string, PortalAccount>();
   private out = new Map<TableName, Map<string, unknown>>();
   /** Documentos já lidos por coleção (com id garantido). */
   private cache = new Map<string, Doc[]>();
@@ -58,6 +84,24 @@ export class Ctx {
     const meta = isObj((dump as Record<string, unknown>).metadata) ? ((dump as Record<string, unknown>).metadata as Doc) : null;
     this.now = opts.now || str(meta?.timestamp) || '2000-01-01T00:00:00.000Z';
     this.keepIds = opts.keepLegacyUserIds ?? true;
+    this.otherProject = !!opts.otherProject;
+    const low = (v: unknown) => (str(v) || '').trim().toLowerCase();
+    const d = dump as Record<string, unknown>;
+    for (const u of docs(d.users)) {
+      const uid = str(u.uid) || str(u.id);
+      if (uid && low(u.email)) this.legacyUserEmail.set(uid, low(u.email));
+    }
+    for (const x of docs(d.external_sellers)) {
+      const uid = str(x.linkedUid);
+      const email = low(x.email) || low(x.id);
+      if (uid && email.includes('@')) this.legacyUserEmail.set(uid, email);
+    }
+    for (const p of docs(d.portal_users)) {
+      const uid = str(p.uid) || str(p.id);
+      if (uid && low(p.email)) this.legacyPortalEmail.set(uid, low(p.email));
+    }
+    for (const u of opts.currentUsers || []) if (u.email) this.newUserByEmail.set(u.email.toLowerCase(), u.id);
+    for (const a of opts.currentPortalAccounts || []) if (a.email) this.newPortalByEmail.set(a.email.toLowerCase(), a.id);
   }
 
   /** Documentos de uma coleção antiga (cada um com `id`). */
@@ -108,9 +152,26 @@ export class Ctx {
   }
 
   // ---------------------------------------------------------------- usuários
-  /** Id de usuário antigo (ou null quando os uids não sobrevivem à migração). */
+  /**
+   * Id de usuário no sistema novo. Mesmo projeto: o uid antigo. Outro projeto: o id de
+   * quem já entrou com o mesmo e-mail (senão o uid antigo, ligado numa nova importação).
+   * PostgreSQL: null.
+   */
   uid(v: unknown): string | null {
-    return this.keepIds ? str(v) : null;
+    const u = str(v);
+    if (!u || !this.keepIds) return null;
+    if (!this.otherProject) return u;
+    const email = this.legacyUserEmail.get(u);
+    return (email && this.newUserByEmail.get(email)) || u;
+  }
+
+  /** Conta do portal no sistema novo para o uid antigo (outro projeto: só se o cliente já entrou). */
+  portalUid(v: unknown): string | null {
+    const u = str(v);
+    if (!u || !this.keepIds) return null;
+    if (!this.otherProject) return u;
+    const email = this.legacyPortalEmail.get(u);
+    return (email && this.newPortalByEmail.get(email)) || null;
   }
 
   userName(uid: unknown, fallback?: unknown): string | null {

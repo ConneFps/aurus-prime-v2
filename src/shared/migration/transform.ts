@@ -14,7 +14,7 @@
 import type { Row, TableName } from '../domain/schema';
 import type { AppSettings, Counter, MeatType } from '../domain/types';
 import { BACKUP_FILE_COLLECTIONS, LEGACY_COLLECTIONS, READ_ERRORS_KEY, type LegacyDump } from './collections';
-import { Ctx, type LegacyFileCopy, type ProductHints, type TransformOptions } from './context';
+import { Ctx, type LegacyFileCopy, type LegacyStorageLink, type ProductHints, type TransformOptions } from './context';
 import { bool, docs, itemKindFromName, normalize, setTzOffset, str, upper, firstStr } from './legacy-utils';
 import {
   mapAudit,
@@ -41,7 +41,7 @@ import { mapDeletedSales, mapSales, mapSupplyMovements } from './map-sales';
 import { mapStockHistory } from './map-stock-history';
 import { withDefaults } from '../app/settings';
 
-export type { LegacyFileCopy, TransformOptions } from './context';
+export type { LegacyFileCopy, LegacyStorageLink, TransformOptions } from './context';
 
 export type PlanTables = { [K in TableName]?: Row<K>[] };
 
@@ -60,6 +60,10 @@ export interface MigrationPlan {
   ignored: string[];
   /** PDFs de NF/boleto guardados em pedaços no banco antigo — copiados para o Storage depois da gravação. */
   files: LegacyFileCopy[];
+  /** Outro projeto: anexos que só têm o caminho no Storage antigo (o link de download é buscado na importação). */
+  storageLinks: LegacyStorageLink[];
+  /** O plano foi feito para um sistema novo em OUTRO projeto Firebase. */
+  otherProject: boolean;
   /** Campos de configuração vindos do sistema antigo (o importador mescla com as configurações atuais). */
   settingsPatch: Partial<AppSettings>;
   /** Momento usado nos carimbos da migração. */
@@ -171,6 +175,28 @@ export function transformLegacy(dump: Record<string, unknown[]> | Record<string,
   }
 
   const tables = ctx.tables() as PlanTables;
+
+  // Outro projeto: anexos só com caminho (sem link) apontam para o Storage ANTIGO.
+  const storageLinks: LegacyStorageLink[] = [];
+  if (ctx.otherProject) {
+    const isAtt = (v: unknown): v is { id: string; path: string; url?: string | null; uploadedAt: string } =>
+      !!v && typeof v === 'object' && typeof (v as { id?: unknown }).id === 'string' && typeof (v as { path?: unknown }).path === 'string' && 'uploadedAt' in (v as object);
+    for (const [t, rows] of Object.entries(tables) as unknown as [TableName, Record<string, unknown>[]][]) {
+      for (const row of rows) {
+        for (const [field, val] of Object.entries(row)) {
+          const list = Array.isArray(val) ? val : val && typeof val === 'object' ? [val] : [];
+          for (const a of list) if (isAtt(a) && a.path && !a.url) storageLinks.push({ table: t, rowId: String(row.id), field, attachmentId: a.id, path: a.path });
+        }
+      }
+    }
+    const staff = [...new Set(ctx.legacyUserEmail.values())];
+    const missing = staff.filter((e) => !ctx.newUserByEmail.has(e));
+    if (missing.length)
+      ctx.w.note(
+        'users.link',
+        `${missing.length} usuário(s) do sistema antigo ainda não entraram no sistema novo (${missing.slice(0, 5).join(', ')}${missing.length > 5 ? '…' : ''}). Carteiras, pedidos e comissões deles ficam ligados quando eles entrarem uma vez e você importar de novo (não duplica)`,
+      );
+  }
   const counts: Partial<Record<TableName, number>> = {};
   for (const [t, rows] of Object.entries(tables)) counts[t as TableName] = (rows as unknown[]).length;
   const sourceCounts: Record<string, number> = {};
@@ -184,6 +210,8 @@ export function transformLegacy(dump: Record<string, unknown[]> | Record<string,
     unmapped,
     ignored,
     files: ctx.files,
+    storageLinks,
+    otherProject: ctx.otherProject,
     settingsPatch,
     generatedAt: ctx.now,
   };

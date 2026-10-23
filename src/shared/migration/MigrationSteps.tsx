@@ -257,7 +257,7 @@ export function PreviewStep({ plan, sourceLabel, filesNote, footer }: { plan: Mi
 // ============================================================================
 
 export interface LogLine {
-  table: TableName | 'files';
+  table: TableName | 'files' | 'links';
   label: string;
   done: number;
   total: number;

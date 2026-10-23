@@ -14,6 +14,13 @@ export interface LegacySource {
    * (sales_attachments/{key}/chunks). null = não existe.
    */
   readAttachment?(key: string): Promise<Blob | null>;
+  /**
+   * true quando o sistema antigo está em OUTRO projeto Firebase (os uids mudam e os
+   * arquivos ficam no Storage antigo).
+   */
+  crossProject?: boolean;
+  /** Link de download de um arquivo do Storage antigo (outro projeto). */
+  storageUrl?(path: string): Promise<string | null>;
 }
 
 /** Junta os pedaços (data URL em base64) gravados pelo sistema antigo num arquivo. */

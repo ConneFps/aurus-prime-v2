@@ -14,7 +14,7 @@ import { useSession } from '../app/session';
 import { useAction, useBackend } from '../data/react';
 import { integer } from '../domain/format';
 import { Button, EmptyState, toast, useConfirm } from '../ui';
-import { copyLegacyFiles, importPlan, readBackupFile, type FileCopyResult, type ImportProgress, type ImportResult } from './importer';
+import { copyLegacyFiles, importPlan, readBackupFile, resolveLegacyStorageLinks, type FileCopyResult, type ImportProgress, type ImportResult } from './importer';
 import { ImportStep, PreviewStep, SourceStep, Stepper, SummaryStep, type LogLine, type ReadStatus } from './MigrationSteps';
 import { getLegacySource } from './source';
 import { transformLegacy, type MigrationPlan } from './transform';
@@ -59,14 +59,29 @@ export function MigrationWizard() {
 
   /** No PostgreSQL os ids de usuário do Firebase não existem (vínculos por id ficam vazios; os nomes são mantidos). */
   const keepLegacyUserIds = backend.info.kind !== 'supabase';
+  /** Sistema antigo em OUTRO projeto Firebase: usuários e contas do portal são ligados pelo e-mail. */
+  const otherProject = !!legacy?.crossProject;
 
-  const buildPlan = (dump: Record<string, unknown>, now: string) => transformLegacy(dump, { now, keepLegacyUserIds });
+  const buildPlan = async (dump: Record<string, unknown>, now: string) => {
+    if (!otherProject) return transformLegacy(dump, { now, keepLegacyUserIds });
+    const [profiles, accounts] = await Promise.all([
+      backend.data.list('profiles').catch(() => []),
+      backend.data.list('portal_accounts').catch(() => []),
+    ]);
+    return transformLegacy(dump, {
+      now,
+      keepLegacyUserIds,
+      otherProject,
+      currentUsers: profiles.map((p) => ({ id: p.id, email: p.email })),
+      currentPortalAccounts: accounts.map((a) => ({ id: a.id, email: a.email })),
+    });
+  };
 
   const fromFile = useAction(async (file: File) => {
     const f = await readBackupFile(file);
     await tick();
     const ts = typeof f.metadata?.timestamp === 'string' ? f.metadata.timestamp : new Date().toISOString();
-    const p = buildPlan(f.dump, ts);
+    const p = await buildPlan(f.dump, ts);
     setSource({ kind: 'file', label: `arquivo ${f.fileName} (${integer(f.totalDocs)} documentos)`, readAt: ts, totalDocs: f.totalDocs });
     setPlan(p);
     setStep(1);
@@ -89,7 +104,7 @@ export function MigrationWizard() {
     const now = new Date().toISOString();
     const total = Object.entries(dump).reduce((s, [k, v]) => s + (k.startsWith('_') || !Array.isArray(v) ? 0 : v.length), 0);
     setSource({ kind: 'direct', label: `${legacy.label} (${integer(total)} documentos)`, readAt: now, totalDocs: total });
-    setPlan(buildPlan(dump, now));
+    setPlan(await buildPlan(dump, now));
     setStep(1);
   });
 
@@ -123,8 +138,20 @@ export function MigrationWizard() {
         line(0, 'running');
         fr = await copyLegacyFiles(backend, legacy, plan.files, (done) => line(done, 'running'));
         line(plan.files.length, fr.failed ? 'error' : 'done', fr.failed ? `${fr.failed} arquivo(s) com erro` : undefined);
-        setFilesResult(fr);
       }
+      // Outro projeto: anexos que só tinham o caminho no Storage antigo recebem o link de download.
+      if (plan.storageLinks.length && legacy?.storageUrl) {
+        const label = 'Links dos arquivos do Storage antigo';
+        const line = (done: number, state: LogLine['state'], message?: string) =>
+          setLog((cur) => [...cur.filter((l) => l.table !== 'links'), { table: 'links', label, done, total: plan.storageLinks.length, state, message }]);
+        line(0, 'running');
+        const lr = await resolveLegacyStorageLinks(backend.data, legacy, plan.storageLinks, (done) => line(done, 'running'));
+        line(plan.storageLinks.length, lr.failed ? 'error' : 'done', lr.failed ? `${lr.failed} sem link` : undefined);
+        fr = fr
+          ? { total: fr.total + lr.total, copied: fr.copied + lr.copied, skipped: fr.skipped + lr.skipped, failed: fr.failed + lr.failed, errors: [...fr.errors, ...lr.errors].slice(0, 8) }
+          : lr;
+      }
+      if (fr) setFilesResult(fr);
       // Registro de auditoria da migração (não interrompe se falhar).
       try {
         await backend.data.insert('audit_logs', {

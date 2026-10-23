@@ -3,9 +3,9 @@ rules_version = '2';
 // =============================================================================
 // Aurus Prime 2.0 — Opção B — REGRAS DO STORAGE (versão completa)
 //
-// ENQUANTO O SISTEMA ATUAL ESTIVER NO AR, NÃO publique este arquivo inteiro:
-// use o storage-acrescentar.rules (só acrescenta, não mexe no que existe).
-// Este arquivo completo é para depois que o sistema atual for desligado.
+// Projeto Firebase SEPARADO para a V2 (o recomendado): publique este arquivo inteiro.
+// Se a V2 usar o MESMO projeto (e o mesmo Storage) do sistema atual, NÃO publique este
+// arquivo inteiro: use o storage-acrescentar.rules (só acrescenta, não mexe no que existe).
 //
 // Pastas do sistema novo: catalog, products, settings, equines (fotos, leitura
 // pública); customers, sales (só a equipe); portal/{uid} (cliente do portal).

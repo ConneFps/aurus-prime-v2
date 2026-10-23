@@ -15,7 +15,7 @@ import type { Row, TableName } from '../domain/schema';
 import { TABLES } from '../domain/schema';
 import type { AppSettings, Attachment, Counter, Invite } from '../domain/types';
 import type { LegacySource } from './source';
-import type { LegacyFileCopy, MigrationPlan } from './transform';
+import type { LegacyFileCopy, LegacyStorageLink, MigrationPlan } from './transform';
 
 /** Ordem de gravação (pais antes dos filhos). */
 export const IMPORT_ORDER: TableName[] = [
@@ -242,6 +242,59 @@ export async function copyLegacyFiles(
     }
     done++;
     onProgress?.(done, files.length);
+  }
+  return res;
+}
+
+/**
+ * Outro projeto: completa o link de download dos anexos que só tinham o caminho no
+ * Storage antigo (o arquivo continua lá; o link funciona de qualquer projeto).
+ */
+export async function resolveLegacyStorageLinks(
+  data: DataApi,
+  source: Pick<LegacySource, 'storageUrl'>,
+  links: LegacyStorageLink[],
+  onProgress?: (done: number, total: number) => void,
+): Promise<FileCopyResult> {
+  const res: FileCopyResult = { total: links.length, copied: 0, skipped: 0, failed: 0, errors: [] };
+  if (!source.storageUrl) {
+    res.skipped = links.length;
+    return res;
+  }
+  const byRow = new Map<string, LegacyStorageLink[]>();
+  for (const l of links) {
+    const k = `${l.table}|${l.rowId}`;
+    byRow.set(k, [...(byRow.get(k) || []), l]);
+  }
+  let done = 0;
+  for (const list of byRow.values()) {
+    const { table, rowId } = list[0];
+    try {
+      const row = (await data.get(table, rowId)) as Record<string, unknown> | null;
+      if (!row) {
+        res.skipped += list.length;
+      } else {
+        const patch: Record<string, unknown> = {};
+        for (const l of list) {
+          const cur = (patch[l.field] ?? row[l.field]) as unknown;
+          const url = await source.storageUrl(l.path).catch(() => null);
+          if (!url) {
+            res.failed++;
+            if (res.errors.length < 8) res.errors.push(`${l.path}: arquivo não encontrado no Storage antigo`);
+            continue;
+          }
+          const fix = (a: unknown) => (a && typeof a === 'object' && (a as { id?: string }).id === l.attachmentId ? { ...(a as object), url } : a);
+          patch[l.field] = Array.isArray(cur) ? cur.map(fix) : fix(cur);
+          res.copied++;
+        }
+        if (Object.keys(patch).length) await data.update(table, rowId, patch as never);
+      }
+    } catch (e) {
+      res.failed += list.length;
+      if (res.errors.length < 8) res.errors.push(`${table}/${rowId}: ${msg(e)}`);
+    }
+    done += list.length;
+    onProgress?.(done, links.length);
   }
   return res;
 }

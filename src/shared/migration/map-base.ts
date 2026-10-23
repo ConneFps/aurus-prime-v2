@@ -436,7 +436,7 @@ export function mapCustomerRequests(ctx: Ctx) {
       createdCustomerId: ctx.customers.has(str(d.createdCustomerId) || '') ? str(d.createdCustomerId) : null,
       suggestedCreditLimit: num(d.suggestedCreditLimit),
       suggestedPaymentTerms: str(d.suggestedPaymentCondition),
-      requestedById: str(d.requestedByUid) || 'legado',
+      requestedById: ctx.uid(d.requestedByUid) || str(d.requestedByUid) || 'legado',
       requestedByName: str(d.requestedByName) || str(d.requestedByEmail) || 'Vendedor externo',
       requestedByEmail: str(d.requestedByEmail),
       reviewedByName: str(d.reviewedByName),
@@ -463,6 +463,8 @@ export function mapCustomerRequests(ctx: Ctx) {
 
 export function mapPortalAccounts(ctx: Ctx) {
   const users = ctx.col('portal_users');
+  let invited = 0;
+  let waiting = 0;
   for (const d of users) {
     const id = str(d.uid) || String(d.id);
     const document = digits(d.document);
@@ -486,8 +488,43 @@ export function mapPortalAccounts(ctx: Ctx) {
       lastLoginAt: isoDateTime(d.lastLoginAt),
     };
     if (custId && !ctx.customers.has(custId)) ctx.w.add('portal.cust', 'Contas do portal ligadas a cliente inexistente (vínculo removido)', a.email);
-    ctx.put('portal_accounts', a);
+    ctx.legacyPortalAccounts.set(id, a);
+    if (!ctx.otherProject) {
+      ctx.put('portal_accounts', a);
+      continue;
+    }
+    // Outro projeto: o login do cliente não vem junto. Quem já entrou no sistema novo recebe os
+    // dados/vínculo; os demais clientes liberados viram CONVITE (no 1º acesso já entram aprovados).
+    const newId = ctx.newPortalByEmail.get(a.email);
+    if (newId) ctx.put('portal_accounts', { ...a, id: newId });
+    else if (a.status === 'APPROVED' && a.customerId && a.email) {
+      const c = ctx.customers.get(a.customerId)!;
+      ctx.put('portal_invites', {
+        id: a.email,
+        createdAt: a.createdAt,
+        updatedAt: a.updatedAt,
+        legacyId: String(d.id),
+        email: a.email,
+        customerId: c.id,
+        customerName: c.name,
+        name: a.name,
+        phone: digits(a.phone) || null,
+        document: a.document ?? c.document ?? null,
+        priceTableId: c.priceTableId ?? null,
+        status: 'PENDING',
+        invitedByName: 'Migração do sistema antigo',
+        acceptedAt: null,
+        accountId: null,
+      });
+      invited++;
+    } else waiting++;
   }
+  if (invited)
+    ctx.w.note(
+      'portal.invites',
+      `${invited} cliente(s) do portal viraram convite: no portal novo, o cliente toca em "Criar conta" com o mesmo e-mail e já entra liberado`,
+    );
+  if (waiting) ctx.w.note('portal.waiting', `${waiting} cadastro(s) do portal que ainda não estavam liberados ficaram de fora: o cliente se cadastra de novo no portal novo`);
   if (users.length && !ctx.keepIds)
     ctx.w.note(
       'portal.pg',

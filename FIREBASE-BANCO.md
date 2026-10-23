@@ -1,80 +1,75 @@
-# Aurus Prime 2.0 (Opção B) — como preparar o Firebase
+# Aurus Prime V2 — como preparar o Firebase
 
-O sistema novo usa o **mesmo projeto Firebase** do sistema atual
-(`gen-lang-client-0404417776`), mas grava num **banco de dados novo e separado**,
-chamado **`aurus-prime-v2`**. O banco antigo não é alterado — ele só é lido na
-migração. Faça os passos abaixo uma vez, no
-[console do Firebase](https://console.firebase.google.com/), logado com a conta
-dona do projeto.
+A V2 roda num **projeto Firebase seu, separado** do sistema atual. O projeto do sistema
+atual (`gen-lang-client-0404417776`) **não é alterado**: ele só é **lido** na migração.
+Tudo abaixo é feito no [console do Firebase](https://console.firebase.google.com/), logado
+com a conta dona dos projetos.
 
-## 1. Criar o banco `aurus-prime-v2`
+> O arquivo `firebase-applet-config.json` diz qual projeto a V2 usa (bloco principal) e onde
+> está o sistema atual (bloco `legacy`).
 
-1. Menu **Firestore Database**.
-2. No seletor de bancos (no alto da página), clique em **Criar banco de dados**
-   (ou "Adicionar banco de dados").
-3. **ID do banco:** `aurus-prime-v2` — exatamente assim, em minúsculas.
-4. Edição **Standard**, modo **produção**, local `southamerica-east1 (São Paulo)`
-   (ou o mesmo local do banco atual). Confirme.
+---
 
-## 2. Publicar as regras do banco
+## No projeto NOVO (o da V2)
 
-1. Ainda em **Firestore Database**, selecione o banco **`aurus-prime-v2`**
-   no seletor (as regras são de cada banco — não mexa nas do banco antigo).
-2. Aba **Regras**: apague o conteúdo, cole o arquivo `firestore.rules` inteiro e
-   clique em **Publicar**.
-3. Índices: nada a fazer. (O arquivo `firestore.indexes.json` só desliga a
-   indexação de listas grandes, como os itens do pedido; é opcional.)
+### 1. Plano
+O Storage (fotos, PDFs de NF/boleto, comprovantes) exige o plano **Blaze** (cartão
+cadastrado). Dentro da cota gratuita a conta fica em zero.
 
-## 3. Acrescentar as regras de arquivos (Storage) — sem apagar nada
+### 2. Banco de dados
+1. **Firestore Database → Criar banco de dados** (ou "Adicionar banco de dados" no seletor
+   de bancos, se o projeto já tiver um).
+2. **ID do banco:** `aurus-prime-v2` — exatamente assim. (Assim a V2 não se mistura com
+   nenhum outro banco que esse projeto já tenha.)
+3. Edição **Standard**, modo **produção**, local `southamerica-east1 (São Paulo)`.
 
-O Storage (fotos e documentos) é o **mesmo** do sistema atual, então aqui a regra é
-**acrescentar, nunca substituir**:
+### 3. Regras do banco
+Com o banco **`aurus-prime-v2` selecionado** no topo da tela → aba **Regras** → apague o
+conteúdo, cole o arquivo `firestore.rules` inteiro → **Publicar**.
 
-1. Menu **Storage** → aba **Regras**. Copie tudo o que está lá e guarde num bloco de
-   notas (backup).
-2. Procure a linha `match /b/{bucket}/o {`. Logo **abaixo** dela, cole o conteúdo do
-   arquivo **`storage-acrescentar.rules`** inteiro. Não apague nenhuma linha que já
-   existia.
-3. Clique em **Publicar**. Se o console pedir permissão para as regras do Storage
-   lerem o Firestore, clique em **Permitir**. (Se aparecer erro, o console não
-   publica nada e o sistema atual continua como estava.)
+### 4. Storage (arquivos)
+1. **Storage → Começar** (cria o bucket, se ainda não existir).
+2. Aba **Regras** → cole o arquivo **`storage.rules`** inteiro → **Publicar**. Se o console
+   pedir permissão para as regras do Storage lerem o Firestore, clique em **Permitir**.
+   (Se esse projeto já usa o Storage para outro sistema, me avise antes: aí as regras são
+   acrescentadas, não substituídas.)
 
-Isso é seguro para o sistema atual porque, no Storage, uma regra só **libera**; ela
-nunca tira o que outra regra já liberava. E o bloco só trata das pastas do sistema
-novo. (O arquivo `storage.rules` completo é para depois que o sistema atual for
-desligado.)
+### 5. Login
+1. **Authentication → Começar → Método de login**: ative **Google** e **E-mail/senha**.
+2. **Authentication → Modelos**: idioma **português**.
+3. **Authentication → Configurações → Domínios autorizados → Adicionar domínio**: o endereço
+   onde a V2 abre (o da prévia no Google AI Studio e, depois de publicar, o do Cloud Run).
 
-## 4. Ativar os tipos de login
+## No projeto ATUAL (`gen-lang-client-0404417776`) — só uma coisa
 
-**Authentication → Método de login**: **Google** e **E-mail/senha** precisam estar ativos. O sistema atual já
-usa os dois, então provavelmente não há nada a fazer aqui (não desative nenhum).
+**Authentication → Configurações → Domínios autorizados → Adicionar domínio**: o mesmo
+endereço da V2. É o que permite a tela de migração da V2 abrir o login do sistema atual para
+ler os dados. Não mexa em mais nada nesse projeto.
 
-Quem entra com e-mail e senha recebe um e-mail de confirmação e só acessa depois
-de clicar no link (isso impede alguém de se cadastrar com o e-mail de outra pessoa).
-Dica: em **Authentication → Modelos**, escolha o idioma **português**.
+---
 
-## 5. Autorizar o endereço do sistema
+## Primeiro acesso = administrador
 
-**Authentication → Configurações → Domínios autorizados → Adicionar domínio**:
-inclua o endereço onde o sistema novo vai rodar (o endereço que aparece no navegador
-ao abrir o app no AI Studio e, depois de publicar, o do Cloud Run). Só **adicione**:
-não remova os domínios que já estão lá, porque o sistema atual usa eles. Sem isso, o
-login com Google do app novo mostra "Este endereço não está autorizado no Firebase".
-
-## 6. Primeiro acesso = administrador
-
-Com o banco novo vazio, **a primeira pessoa que entrar vira Administrador** (e o
-sistema anota que já tem administrador). Por isso, **o dono deve ser o primeiro a
-entrar**, com **Entrar com Google**. Depois disso:
+Com o banco novo vazio, **a primeira pessoa que entrar vira Administrador**. Por isso, **o dono
+deve ser o primeiro a entrar**, com **Entrar com Google**. Depois:
 
 - e-mails dos domínios da empresa (mvgbalimentacao.com, grtbalimentacao.com,
-  girassolalimentacao.com, aurusprime.com — lista em Configurações) entram como
-  **Operador**;
-- qualquer outro e-mail só entra com **convite** (Configurações → Usuários), já com
-  o papel escolhido;
-- clientes do portal se cadastram sozinhos e ficam **aguardando liberação**.
+  girassolalimentacao.com, aurusprime.com) entram como **Operador**;
+- os usuários do sistema atual chegam como **convites** pela migração (com o papel que já tinham);
+- quem entra com Google continua entrando com Google; quem usava senha cria uma nova no primeiro
+  acesso ("Primeiro acesso? Criar senha") — senhas não passam de um projeto para outro;
+- clientes do portal liberados chegam como **convites**: no portal novo, tocam em "Criar conta" com
+  o mesmo e-mail e já entram liberados.
 
-## Observações
+## Migração (Configurações → Dados → Migração do sistema antigo)
 
-- O arquivo `firebase-applet-config.json` diz qual projeto e qual banco usar
-  (`firestoreDatabaseId: "aurus-prime-v2"`; `legacyFirestoreDatabaseId` = banco antigo).
+1. Peça para a equipe **entrar uma vez** na V2. É assim que carteiras, pedidos e comissões ficam
+   ligados às pessoas certas (os logins mudam de um projeto para outro; a ligação é pelo e-mail).
+2. **Conectar direto ao sistema antigo** → entre com a sua conta Google do sistema atual na janela
+   que abrir → confira a prévia → **Importar**.
+3. Pode repetir quantas vezes quiser, sem duplicar. No dia da troca, rode uma última vez — e rode
+   de novo se alguém entrar pela primeira vez depois.
+
+Os PDFs de NF/boleto guardados em pedaços no banco atual são copiados para o Storage novo. As fotos
+e arquivos que já estavam no Storage do sistema atual continuam lá e abrem pelo link — por isso
+**não apague o projeto atual** depois da troca (pode só parar de usar o app antigo).

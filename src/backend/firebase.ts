@@ -86,8 +86,20 @@ export interface FirebaseBackendConfig {
   measurementId?: string;
   /** Banco NOMEADO do Aurus Prime 2.0 (ex.: "aurus-prime-v2"). */
   firestoreDatabaseId: string;
-  /** Banco do sistema antigo (fonte da migração). */
+  /** Banco do sistema antigo (fonte da migração) — quando ele está no MESMO projeto. */
   legacyFirestoreDatabaseId?: string;
+  /** Sistema antigo em OUTRO projeto Firebase: configuração web dele + banco. */
+  legacy?: LegacyFirebaseConfig | null;
+}
+
+export interface LegacyFirebaseConfig {
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  storageBucket: string;
+  messagingSenderId?: string;
+  appId: string;
+  firestoreDatabaseId: string;
 }
 
 export interface FirebaseHandles {

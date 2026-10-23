@@ -8,7 +8,7 @@ import { DEFAULT_SETTINGS } from '../src/shared/app/settings';
 import { createMemoryBackend } from '../src/shared/data/memory';
 import type { Backend } from '../src/shared/data/api';
 import { round3 } from '../src/shared/domain/format';
-import { copyLegacyFiles, importPlan, legacyFileAttachmentId } from '../src/shared/migration/importer';
+import { copyLegacyFiles, importPlan, legacyFileAttachmentId, resolveLegacyStorageLinks } from '../src/shared/migration/importer';
 import { chunksToBlob } from '../src/shared/migration/source';
 import { transformLegacy, type MigrationPlan } from '../src/shared/migration/transform';
 import { createOps, type Actor } from '../src/shared/ops';
@@ -254,5 +254,69 @@ describe('importação v11 (MemoryData)', () => {
       { index: 0, data: '' },
     ]);
     expect(await b!.text()).toBe('mundo');
+  });
+});
+
+describe('sistema novo em OUTRO projeto Firebase', () => {
+  const dumpWithPath = () => {
+    const d = v11Dump();
+    d.sales.push({
+      id: 'sale-path',
+      orderNumber: '20260091',
+      customerId: 'cust-1',
+      approvalStatus: 'APPROVED',
+      paymentMethod: 'PIX',
+      date: '2026-10-16',
+      totalValue: 120,
+      items: [{ cutType: 'Picanha', weightKg: 1, pricePerKg: 120 }],
+      invoiceStoragePath: 'invoices/sale-path/nf.pdf',
+      invoiceFileName: 'nf.pdf',
+    });
+    return d;
+  };
+
+  it('liga usuários pelo e-mail e transforma clientes do portal em convites', () => {
+    const q = transformLegacy(dumpWithPath() as never, {
+      now: NOW,
+      otherProject: true,
+      currentUsers: [{ id: 'novo-vend', email: 'vendas@mvgbalimentacao.com' }],
+      currentPortalAccounts: [],
+    });
+    expect(q.otherProject).toBe(true);
+    const sales = q.tables.sales!;
+    expect(sales.find((s) => s.id === 'sale-1')!.sellerId).toBe('novo-vend'); // já entrou → id novo
+    expect(sales.find((s) => s.id === 'sale-4')!.sellerId).toBe('uid-renato'); // ainda não entrou → liga na próxima importação
+    expect(q.warnings.join('\n')).toMatch(/ainda não entraram no sistema novo/);
+    expect(q.tables.portal_accounts ?? []).toHaveLength(0);
+    const inv = q.tables.portal_invites!.find((i) => i.id === 'cliente@restaurante.com')!;
+    expect(inv).toMatchObject({ status: 'PENDING', customerId: 'cust-1' });
+    expect(q.warnings.join('\n')).toMatch(/viraram convite/);
+    const po = sales.find((s) => s.channel === 'PORTAL' && s.customerId === 'cust-1')!;
+    expect(po.portalAccountId).toBeNull();
+    expect(q.storageLinks).toContainEqual({ table: 'sales', rowId: 'sale-path', field: 'attachments', attachmentId: 'sale-path-nf', path: 'invoices/sale-path/nf.pdf' });
+  });
+
+  it('cliente que já entrou no portal novo recebe a conta e os pedidos antigos', () => {
+    const q = transformLegacy(dumpWithPath() as never, {
+      now: NOW,
+      otherProject: true,
+      currentUsers: [],
+      currentPortalAccounts: [{ id: 'novo-p1', email: 'cliente@restaurante.com' }],
+    });
+    expect(q.tables.portal_accounts!.map((a) => [a.id, a.status, a.customerId])).toEqual([['novo-p1', 'APPROVED', 'cust-1']]);
+    const po = q.tables.sales!.find((s) => s.channel === 'PORTAL' && s.customerId === 'cust-1')!;
+    expect(po.portalAccountId).toBe('novo-p1');
+    expect(q.tables.portal_invites!.find((i) => i.id === 'cliente@restaurante.com')).toBeUndefined();
+  });
+
+  it('completa o link dos arquivos que ficaram no Storage antigo', async () => {
+    const q = transformLegacy(dumpWithPath() as never, { now: NOW, otherProject: true });
+    const b = createMemoryBackend();
+    await b.data.insert('settings', { ...DEFAULT_SETTINGS, id: 'main', bootstrapped: true });
+    expect((await importPlan(b.data, q)).ok).toBe(true);
+    const r = await resolveLegacyStorageLinks(b.data, { storageUrl: async (path) => (path.startsWith('invoices/') ? `https://antigo.example/${path}` : null) }, q.storageLinks);
+    expect(r.copied).toBeGreaterThanOrEqual(1);
+    const att = (await b.data.get('sales', 'sale-path'))!.attachments.find((a) => a.id === 'sale-path-nf')!;
+    expect(att.url).toBe('https://antigo.example/invoices/sale-path/nf.pdf');
   });
 });

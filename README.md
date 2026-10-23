@@ -1,4 +1,4 @@
-# Aurus Prime 2.0 — Opção B
+# MVGB Agro — Aurus Prime V2
 
 **Banco Firebase (Firestore) reestruturado · visual claro (verde-campo)**
 
@@ -7,37 +7,38 @@ abate e desossa, estoque por lote e validade, vendas e intercompany, separação
 ranking, tabelas de preço, financeiro (contas a receber e a pagar, fluxo de caixa, comissões), equinos,
 portal do cliente, vendedores externos, relatórios, treinamento e migração dos dados do sistema atual.
 
-Usa o **mesmo projeto Firebase do sistema atual** (`gen-lang-client-0404417776`), mas grava num **banco novo e
-separado** (`aurus-prime-v2`). O banco atual não é alterado.
+Roda num **projeto Firebase próprio**, separado do sistema atual, no banco `aurus-prime-v2`. O projeto do
+sistema atual (`gen-lang-client-0404417776`) não é alterado: ele só é **lido** na migração.
 
 ---
 
 ## Como subir sem afetar o sistema atual
 
-- O sistema novo entra no AI Studio como um **app novo**. O app atual continua no ar, igual, até o dia da troca.
-- Ele grava num **banco novo** (`aurus-prime-v2`). O banco atual só é **lido** na migração.
-- No Firebase, só três cuidados:
-  1. regras do banco: publique **com o banco `aurus-prime-v2` selecionado**, nunca no banco atual;
-  2. regras de arquivos (Storage): **acrescente** o bloco, não substitua (passo 3 do FIREBASE-BANCO.md);
-  3. domínios autorizados: **adicione** o endereço novo, não remova nenhum.
+- A V2 entra no AI Studio como um **app novo**, ligada a outro projeto Firebase. O app atual continua no ar, igual,
+  até o dia da troca.
+- No projeto do sistema atual só se **adiciona** o endereço da V2 em *Domínios autorizados* (para a migração ler os
+  dados). Nada é gravado nem alterado lá.
 - Não altere o app atual no AI Studio durante a preparação (abrir e usar normalmente pode).
 
 ## 1. Preparar o Firebase (uma vez)
 
-Siga **[FIREBASE-BANCO.md](./FIREBASE-BANCO.md)**. Em resumo:
+Siga **[FIREBASE-BANCO.md](./FIREBASE-BANCO.md)**. Em resumo, no projeto da V2:
 
-1. Firestore → criar o banco **`aurus-prime-v2`**.
-2. Publicar `firestore.rules` **no banco novo** e **acrescentar** `storage-acrescentar.rules` às regras do Storage.
-3. Authentication: Google e E-mail/senha ativos (já estão, no sistema atual); **adicione** o endereço do app novo
-   em **Authorized domains**.
+1. Plano Blaze (exigido pelo Storage; dentro da cota gratuita custa zero).
+2. Firestore → criar o banco **`aurus-prime-v2`** e publicar `firestore.rules` nele.
+3. Storage → publicar `storage.rules`.
+4. Authentication: Google e E-mail/senha ligados; endereço da V2 em **Domínios autorizados** (nos dois projetos).
+
+O arquivo `firebase-applet-config.json` tem a configuração do projeto da V2 e, no bloco `legacy`, a do sistema
+atual (fonte da migração).
 
 ## 2. Colocar no Google AI Studio
 
 1. Crie um repositório no GitHub (pode ser privado) e envie **o conteúdo desta pasta** para ele.
 2. No [Google AI Studio](https://aistudio.google.com) → **Build** → no campo de mensagem, clique em **+** →
    **Import from GitHub** → escolha o repositório.
-3. O arquivo `firebase-applet-config.json` já aponta para o projeto atual e para o banco `aurus-prime-v2`. Não peça ao
-   assistente do AI Studio para "configurar o Firebase": isso pode criar outro banco.
+3. O arquivo `firebase-applet-config.json` já aponta para o projeto da V2 e para o banco `aurus-prime-v2`. Não peça
+   ao assistente do AI Studio para "configurar o Firebase": isso pode criar outro projeto ou banco.
 4. Se o AI Studio não listar o repositório privado, deixe-o público só durante a importação e volte para privado.
 5. Para a equipe usar: **Deploy** (Cloud Run) e adicione o endereço gerado em *Authorized domains*.
 
@@ -57,8 +58,8 @@ senha** e confirma o e-mail pelo link que o sistema envia.
 - **Clientes novos**: o vendedor faz o **pré-cadastro** (Clientes → Pré-cadastrar cliente, com limite e condição
   sugeridos) e o **financeiro libera** (com limite, condição e forma de pagamento) ou **bloqueia** com motivo, em
   Clientes → Pré-cadastros. Vendedor não cadastra cliente direto.
-- Os logins do sistema atual continuam valendo: quem entrava pelo Google continua pelo Google, e quem
-  entrava com senha usa a mesma senha.
+- Quem entrava pelo Google continua pelo Google. Quem usava senha cria uma nova no primeiro acesso ("Primeiro
+  acesso? Criar senha"): senhas não passam de um projeto Firebase para outro.
 - Clientes do portal se cadastram em `…/#/portal` e aguardam aprovação em **Comercial → Portal do cliente**. Ou a
   equipe **convida** (Portal do cliente → Contas → Convidar cliente): no primeiro acesso com aquele e-mail a conta já
   entra liberada. Os preços do portal seguem a tabela de preço do cliente, e a aprovação do pedido confere os preços
@@ -68,14 +69,17 @@ senha** e confirma o e-mail pelo link que o sistema envia.
 
 Em **Configurações → Dados → Migração do sistema antigo**:
 
-- **Conexão direta (recomendado)**: como é o mesmo projeto Firebase, basta estar logado com a conta de
-  administrador do sistema atual. O assistente lê todas as coleções antigas.
-- **Arquivo de backup (.json)**: alternativa, gerado no sistema atual em *Configurações → Backup*.
+- **Conexão direta (recomendado)**: abre uma janela de login do Google do sistema atual (entre com a sua conta de
+  administrador de lá) e lê todas as coleções. O endereço da V2 precisa estar nos *Domínios autorizados* do projeto
+  atual.
+- **Arquivo de backup (.json)**: alternativa, gerado no sistema atual em *Configurações → Backup* (não traz os PDFs).
+
+Antes da importação final, peça para a equipe **entrar uma vez** na V2: os logins mudam de um projeto para outro, e
+é pelo e-mail que a migração liga carteiras, pedidos e comissões a cada pessoa. Clientes do portal liberados chegam
+como convites (no portal novo, "Criar conta" com o mesmo e-mail e já entram liberados).
 
 O assistente mostra uma prévia com contagens e avisos antes de gravar. Pode repetir sem duplicar nada, mas faça a
-importação final **antes** da equipe começar a usar o sistema novo. Nesta opção os logins continuam os
-mesmos: usuários antigos aceitam o convite automaticamente no primeiro acesso, e clientes do portal mantêm
-a conta.
+importação final no dia da troca (e de novo se alguém entrar pela primeira vez depois).
 
 O que a migração traz (versão atual do sistema antigo, inclusive pré-cadastros, convites do portal e sub-lotes):
 - **Estoque com histórico**: cada peça chega com o saldo atual, e as baixas e estornos do *registro de baixas* do
@@ -90,14 +94,14 @@ O que a migração traz (versão atual do sistema antigo, inclusive pré-cadastr
 1. Escolha um horário sem movimento (fim do dia ou fim de semana) e avise a equipe.
 2. Rode a migração uma última vez (pega tudo o que entrou no sistema atual até ali).
 3. Passe o endereço novo para a equipe. A partir daí, ninguém lança mais nada no sistema atual.
-4. Deixe o app atual no ar por algumas semanas só para consulta. Depois dá para desligá-lo e trocar o Storage pelo
-   `storage.rules` completo.
+4. Deixe o app atual no ar por algumas semanas só para consulta. Depois pode parar de usá-lo, mas **não apague o
+   projeto atual**: as fotos e arquivos antigos continuam abrindo de lá.
 
 ## 6. Testes
 
 ```
 npm install
-npm test     # regras de negócio e migração (47 testes)
+npm test     # regras de negócio e migração (50 testes)
 ```
 
 ## Estrutura
